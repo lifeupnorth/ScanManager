@@ -10,12 +10,8 @@ public sealed class EnumDisplayConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) => value switch
     {
-        ScanSource.Flatbed => "Flatbed (glass)",
-        ScanSource.Feeder => "Document feeder",
-        ScanSource.Duplex => "Document feeder, both sides",
-        ColorMode.Color => "Color",
-        ColorMode.Grayscale => "Grayscale",
-        ColorMode.BlackAndWhite => "Black & white",
+        ScanSource source => DisplayNames.For(source),
+        ColorMode mode => DisplayNames.For(mode),
         null => "",
         _ => value.ToString() ?? "",
     };

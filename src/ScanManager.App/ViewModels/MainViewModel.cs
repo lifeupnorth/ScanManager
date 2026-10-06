@@ -33,6 +33,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private string? _selectedPageImagePath;
     private CancellationTokenSource? _scanCts;
     private int _capabilitiesRequest;
+    private string? _sourcesDeviceId; // device the source list was last built for
     private bool _syncingArea;
 
     private enum ScanOutcome { Completed, Cancelled, Failed }
@@ -49,7 +50,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
         _initializing = true;
         StatusText = "Starting…";
-        SelectedSource = _settings.Source;
+        SelectedSource = _settings.DefaultSource ?? _settings.Source;
         SelectedColorMode = _settings.ColorMode;
         SelectedDpi = _settings.Dpi;
         Brightness = _settings.Brightness;
@@ -318,7 +319,11 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         var available = _capabilities?.Sources.Select(s => s.Source).ToList() ?? [ScanSource.Flatbed];
         ReplaceItems(Sources, available);
 
-        var source = available.Contains(SelectedSource) ? SelectedSource : available[0];
+        // Apply the default source for a newly selected scanner, but don't override a source
+        // the user picked by hand when the same scanner is merely refreshed.
+        bool newDevice = !string.Equals(_sourcesDeviceId, SelectedDevice?.Id, StringComparison.OrdinalIgnoreCase);
+        _sourcesDeviceId = SelectedDevice?.Id;
+        var source = SourcePreference.Choose(available, newDevice ? _settings.DefaultSource : null, SelectedSource);
         if (source != SelectedSource)
         {
             SelectedSource = source; // applies the source's capabilities
@@ -418,6 +423,28 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         {
             _syncingArea = false;
         }
+    }
+
+    [RelayCommand(CanExecute = nameof(IsIdle))]
+    private void OpenSettings()
+    {
+        var updated = _dialogs.EditPreferences(new Preferences(_settings.DefaultSource));
+        if (updated is null) return;
+
+        _settings.DefaultSource = updated.DefaultSource;
+        SaveSettings();
+
+        if (updated.DefaultSource is not { } preferred)
+        {
+            StatusText = "ScanManager will start with the source you used last.";
+            return;
+        }
+
+        var chosen = SourcePreference.Choose(Sources.ToList(), preferred, SelectedSource);
+        SelectedSource = chosen;
+        StatusText = chosen == preferred
+            ? $"Default source: {DisplayNames.For(preferred)}."
+            : $"Default source: {DisplayNames.For(preferred)}. This scanner doesn't have it, so {DisplayNames.For(chosen)} is selected.";
     }
 
     [RelayCommand]
@@ -909,7 +936,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         IRelayCommand[] commands =
         [
             RefreshDevicesCommand, PreviewCommand, ScanCommand, CancelScanCommand, SaveCommand, PrintCommand,
-            ImportCommand, UndoCommand, ClearPagesCommand, RotateLeftCommand, RotateRightCommand, Rotate180Command,
+            ImportCommand, UndoCommand, ClearPagesCommand, OpenSettingsCommand, RotateLeftCommand, RotateRightCommand, Rotate180Command,
             StartCropCommand, ApplyCropCommand, CancelCropCommand, DeletePageCommand, MovePageUpCommand, MovePageDownCommand,
         ];
         foreach (var command in commands)

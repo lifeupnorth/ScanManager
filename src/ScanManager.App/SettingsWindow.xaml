@@ -1,0 +1,24 @@
+<Window x:Class="ScanManager.App.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Settings"
+        Width="460" SizeToContent="Height"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False">
+    <StackPanel Margin="24,20,24,20">
+        <TextBlock Text="Scanning" FontSize="18" FontWeight="SemiBold" />
+
+        <TextBlock Text="Default source" Style="{StaticResource FieldLabel}" />
+        <ComboBox x:Name="DefaultSourceBox" DisplayMemberPath="Name" HorizontalAlignment="Stretch"
+                  AutomationProperties.Name="Default source" />
+        <TextBlock Style="{StaticResource Hint}"
+                   Text="Selected when ScanManager starts and when you switch scanners. You can still pick another source for a single scan. If a scanner doesn't have this source, the closest one it has is used." />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,24,0,0">
+            <Button Content="Save" IsDefault="True" MinWidth="96" Click="Save_Click"
+                    Style="{DynamicResource AccentButtonStyle}" />
+            <Button Content="Cancel" IsCancel="True" MinWidth="96" Margin="8,0,0,0" />
+        </StackPanel>
+    </StackPanel>
+</Window>

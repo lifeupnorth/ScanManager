@@ -34,41 +34,50 @@
 
         <!-- ===== Command bar ===== -->
         <Border Grid.Row="0" Padding="10,8" BorderThickness="0,0,0,1" Style="{StaticResource SectionPanel}">
-            <StackPanel Orientation="Horizontal">
-                <Button Command="{Binding ImportCommand}" ToolTip="Add image files as pages (Ctrl+O). You can also drop files on the window." Padding="12,6" Margin="0,0,6,0" AutomationProperties.Name="Add images">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Command="{Binding OpenSettingsCommand}" ToolTip="Settings, such as the default scan source"
+                        Padding="12,6" AutomationProperties.Name="Settings">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Style="{StaticResource Icon}" Text="&#xE8E5;" />
-                        <TextBlock Text="Add images" Margin="8,0,0,0" />
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE713;" />
+                        <TextBlock Text="Settings" Margin="8,0,0,0" />
                     </StackPanel>
                 </Button>
-                <Button Command="{Binding SaveCommand}" ToolTip="Save all pages as PDF, TIFF, PNG or JPEG (Ctrl+S)" Padding="12,6" Margin="0,0,6,0" AutomationProperties.Name="Save">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Style="{StaticResource Icon}" Text="&#xE74E;" />
-                        <TextBlock Text="Save" Margin="8,0,0,0" />
-                    </StackPanel>
-                </Button>
-                <Button Command="{Binding PrintCommand}" ToolTip="Print all pages (Ctrl+P)" Padding="12,6" Margin="0,0,6,0" AutomationProperties.Name="Print">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Style="{StaticResource Icon}" Text="&#xE749;" />
-                        <TextBlock Text="Print" Margin="8,0,0,0" />
-                    </StackPanel>
-                </Button>
+                <StackPanel Orientation="Horizontal">
+                    <Button Command="{Binding ImportCommand}" ToolTip="Add image files as pages (Ctrl+O). You can also drop files on the window." Padding="12,6" Margin="0,0,6,0" AutomationProperties.Name="Add images">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE8E5;" />
+                            <TextBlock Text="Add images" Margin="8,0,0,0" />
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding SaveCommand}" ToolTip="Save all pages as PDF, TIFF, PNG or JPEG (Ctrl+S)" Padding="12,6" Margin="0,0,6,0" AutomationProperties.Name="Save">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE74E;" />
+                            <TextBlock Text="Save" Margin="8,0,0,0" />
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding PrintCommand}" ToolTip="Print all pages (Ctrl+P)" Padding="12,6" Margin="0,0,6,0" AutomationProperties.Name="Print">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE749;" />
+                            <TextBlock Text="Print" Margin="8,0,0,0" />
+                        </StackPanel>
+                    </Button>
 
-                <Border Style="{StaticResource ToolbarSeparator}" />
+                    <Border Style="{StaticResource ToolbarSeparator}" />
 
-                <Button Command="{Binding UndoCommand}" ToolTip="{Binding UndoDescription}" Padding="12,6" Margin="0,0,6,0" AutomationProperties.Name="Undo">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Style="{StaticResource Icon}" Text="&#xE7A7;" />
-                        <TextBlock Text="Undo" Margin="8,0,0,0" />
-                    </StackPanel>
-                </Button>
-                <Button Command="{Binding ClearPagesCommand}" ToolTip="Remove all pages and start a new document" Padding="12,6" AutomationProperties.Name="Clear all">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Style="{StaticResource Icon}" Text="&#xE894;" />
-                        <TextBlock Text="Clear all" Margin="8,0,0,0" />
-                    </StackPanel>
-                </Button>
-            </StackPanel>
+                    <Button Command="{Binding UndoCommand}" ToolTip="{Binding UndoDescription}" Padding="12,6" Margin="0,0,6,0" AutomationProperties.Name="Undo">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE7A7;" />
+                            <TextBlock Text="Undo" Margin="8,0,0,0" />
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding ClearPagesCommand}" ToolTip="Remove all pages and start a new document" Padding="12,6" AutomationProperties.Name="Clear all">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE894;" />
+                            <TextBlock Text="Clear all" Margin="8,0,0,0" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </DockPanel>
         </Border>
 
         <Grid Grid.Row="1">

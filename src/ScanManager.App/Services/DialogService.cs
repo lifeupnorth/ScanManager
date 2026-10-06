@@ -6,10 +6,14 @@ using System.Windows.Markup;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 using ScanManager.App.Imaging;
+using ScanManager.Core.Scanning;
 
 namespace ScanManager.App.Services;
 
 public sealed record SaveTarget(string Path, ExportFormat Format);
+
+/// <summary>The options edited in the Settings window.</summary>
+public sealed record Preferences(ScanSource? DefaultSource);
 
 /// <summary>Everything the view model needs from the user that involves a window.</summary>
 public interface IDialogService
@@ -18,6 +22,9 @@ public interface IDialogService
     IReadOnlyList<string>? AskImportFiles(string? initialFolder);
     bool Confirm(string message, string title);
     void ShowError(string message, string title = "ScanManager");
+
+    /// <summary>Shows the Settings window. Returns null if the user cancelled.</summary>
+    Preferences? EditPreferences(Preferences current);
 
     /// <summary>Shows the print dialog and prints the pages. Returns false if the user cancelled.</summary>
     bool Print(IReadOnlyList<string> pageFiles, string jobName);
@@ -68,6 +75,12 @@ public sealed class DialogService(Window owner) : IDialogService
 
     public void ShowError(string message, string title = "ScanManager") =>
         MessageBox.Show(owner, message, title, MessageBoxButton.OK, MessageBoxImage.Warning);
+
+    public Preferences? EditPreferences(Preferences current)
+    {
+        var window = new SettingsWindow(current) { Owner = owner };
+        return window.ShowDialog() == true ? window.Result : null;
+    }
 
     public bool Print(IReadOnlyList<string> pageFiles, string jobName)
     {

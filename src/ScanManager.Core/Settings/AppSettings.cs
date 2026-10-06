@@ -9,7 +9,13 @@ namespace ScanManager.Core.Settings;
 public sealed class AppSettings
 {
     public string? LastDeviceId { get; set; }
+
+    /// <summary>The source last used; selected at startup when there is no <see cref="DefaultSource"/>.</summary>
     public ScanSource Source { get; set; } = ScanSource.Flatbed;
+
+    /// <summary>Source to select at startup and when switching scanners; null means "the one used last".</summary>
+    public ScanSource? DefaultSource { get; set; }
+
     public ColorMode ColorMode { get; set; } = ColorMode.Color;
     public int Dpi { get; set; } = 300;
 
