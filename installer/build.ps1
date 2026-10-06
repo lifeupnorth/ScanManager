@@ -6,8 +6,9 @@
   Publishes the app self-contained for each runtime (so users don't need .NET installed)
   and compiles one Inno Setup installer per architecture into artifacts\installers.
 
-  When code signing is configured (see signing.ps1), the app's own executable and DLLs,
-  the installer and the uninstaller are all signed. Otherwise the build is unsigned.
+  When code signing is configured (see signing.ps1), every executable and DLL the app ships
+  without a valid signature, the installer and the uninstaller are all signed. Otherwise the
+  build is unsigned.
 
 .EXAMPLE
   .\installer\build.ps1
@@ -71,10 +72,14 @@ foreach ($rid in $Runtime) {
     }
 
     if ($signing) {
-        # Sign our own binaries; the .NET runtime files are already signed by Microsoft.
-        $ours = Get-ChildItem $publishDir -File | Where-Object { $_.Name -like 'ScanManager*' -and $_.Extension -in '.exe', '.dll' }
-        Write-Host "Signing $($ours.Count) app files..."
-        Invoke-Signing $ours.FullName
+        # Sign whatever has no valid signature, not just our own files: ReadyToRun rewrites the
+        # NuGet DLLs it compiles (CommunityToolkit.Mvvm and others), which drops their signatures.
+        # Smart App Control can block an app that loads unsigned DLLs.
+        # The .NET runtime files come precompiled and keep Microsoft's signatures.
+        $unsigned = Get-ChildItem $publishDir -File -Recurse |
+            Where-Object { $_.Extension -in '.exe', '.dll' -and (Get-AuthenticodeSignature $_.FullName).Status -ne 'Valid' }
+        Write-Host "Signing $(@($unsigned).Count) unsigned app files..."
+        Invoke-Signing $unsigned.FullName
     }
 
     Write-Host "Compiling the $arch installer..."

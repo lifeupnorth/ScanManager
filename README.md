@@ -69,7 +69,7 @@ To publish a release, bump that version, commit, and push a matching tag (for ex
 
 ### Code signing
 
-Builds are unsigned until signing is configured; then `build.ps1` signs the app's own executable and DLLs, the installer and its uninstaller (SHA-256, timestamped). `signtool` and the signing client are downloaded from NuGet. Configure one of these with environment variables (locally) or in the repository's **Settings → Secrets and variables → Actions** (for the release workflow):
+Builds are unsigned until signing is configured; then `build.ps1` signs every executable and DLL the app ships without a valid signature, the installer and its uninstaller (SHA-256, timestamped). That covers the app's own files and the NuGet DLLs (such as CommunityToolkit.Mvvm) whose signatures ReadyToRun compilation removes, so Smart App Control has nothing unsigned to block. `signtool` and the signing client are downloaded from NuGet. Configure one of these with environment variables (locally) or in the repository's **Settings → Secrets and variables → Actions** (for the release workflow):
 
 | Method | Settings |
 | --- | --- |
