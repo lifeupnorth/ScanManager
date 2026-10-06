@@ -17,7 +17,11 @@ public sealed record ScanProcessingOptions(
 
 public sealed record ProcessedScan(BitmapSource Image, bool IsBlank);
 
-/// <summary>WPF imaging helpers. Every bitmap returned is frozen and safe to share across threads.</summary>
+/// <summary>
+/// WPF imaging helpers. Every bitmap returned is frozen and holds its own pixels, so it
+/// can be used from any thread: the app decodes and edits pages on thread-pool threads
+/// and shows them on the UI thread.
+/// </summary>
 public static class ImageTools
 {
     public const int ThumbnailSize = 220;
@@ -40,14 +44,30 @@ public static class ImageTools
         using var stream = File.OpenRead(path);
         var decoder = BitmapDecoder.Create(stream,
             BitmapCreateOptions.PreservePixelFormat | BitmapCreateOptions.IgnoreColorProfile, BitmapCacheOption.OnLoad);
-        return decoder.Frames.Select(f => Freeze((BitmapSource)f)).ToList();
+        return decoder.Frames.Select(Detach).ToList();
     }
 
     private static BitmapSource DecodeFirstFrame(Stream stream)
     {
         var decoder = BitmapDecoder.Create(stream,
             BitmapCreateOptions.PreservePixelFormat | BitmapCreateOptions.IgnoreColorProfile, BitmapCacheOption.OnLoad);
-        return Freeze(decoder.Frames[0]);
+        return Detach(decoder.Frames[0]);
+    }
+
+    /// <summary>
+    /// Copies an image into a plain bitmap. Decoded frames, and anything derived from them
+    /// (CroppedBitmap, TransformedBitmap, ...), keep a link to their BitmapDecoder, and the
+    /// decoder belongs to the thread that created it. Freezing doesn't sever that link: building
+    /// a derived bitmap from such a frame on another thread throws "The calling thread cannot
+    /// access this object because a different thread owns it". A copy has no such link.
+    /// </summary>
+    private static BitmapSource Detach(BitmapSource image)
+    {
+        int stride = (image.PixelWidth * image.Format.BitsPerPixel + 7) / 8;
+        var pixels = new byte[stride * image.PixelHeight];
+        image.CopyPixels(pixels, stride, 0);
+        return Freeze(BitmapSource.Create(image.PixelWidth, image.PixelHeight, image.DpiX, image.DpiY,
+            image.Format, image.Palette, pixels, stride));
     }
 
     public static void SavePng(BitmapSource image, string path)
@@ -80,10 +100,10 @@ public static class ImageTools
     }
 
     public static BitmapSource Rotate(BitmapSource image, int degrees) =>
-        Freeze(new TransformedBitmap(image, new RotateTransform(degrees)));
+        Detach(new TransformedBitmap(image, new RotateTransform(degrees)));
 
     public static BitmapSource Crop(BitmapSource image, Int32Rect rect) =>
-        Freeze(new CroppedBitmap(image, rect));
+        Detach(new CroppedBitmap(image, rect));
 
     /// <summary>Converts a normalised (0..1) rectangle to whole pixels inside the image.</summary>
     public static Int32Rect ToPixelRect(Rect normalized, int width, int height)
@@ -163,10 +183,10 @@ public static class ImageTools
     public static BitmapSource NormalizeImported(BitmapSource image)
     {
         if (IsBlackWhite(image))
-            return image.Format == PixelFormats.BlackWhite ? image : Freeze(new FormatConvertedBitmap(image, PixelFormats.BlackWhite, null, 0));
+            return image.Format == PixelFormats.BlackWhite ? image : Detach(new FormatConvertedBitmap(image, PixelFormats.BlackWhite, null, 0));
         if (IsGray(image))
-            return image.Format == PixelFormats.Gray8 ? image : Freeze(new FormatConvertedBitmap(image, PixelFormats.Gray8, null, 0));
-        return image.Format == PixelFormats.Bgr24 ? image : Freeze(new FormatConvertedBitmap(image, PixelFormats.Bgr24, null, 0));
+            return image.Format == PixelFormats.Gray8 ? image : Detach(new FormatConvertedBitmap(image, PixelFormats.Gray8, null, 0));
+        return image.Format == PixelFormats.Bgr24 ? image : Detach(new FormatConvertedBitmap(image, PixelFormats.Bgr24, null, 0));
     }
 
     private static T Freeze<T>(T bitmap) where T : Freezable

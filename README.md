@@ -55,6 +55,7 @@ Debug builds also list a **Test scanner (simulated)** with a flatbed, feeder and
 | `src/ScanManager.App` | The WPF app (MVVM with CommunityToolkit.Mvvm, Windows 11 Fluent theme). `RegionSelector` is the frame control used both for the scan area and for cropping. Page images are kept as PNG files in a temp session folder rather than in memory, which keeps long feeder jobs light and makes undo cheap. |
 | `src/ScanManager.Cli` | `scancli`, a small command-line tool over the same backend — useful for diagnosing driver issues. |
 | `tests/ScanManager.Core.Tests` | xUnit tests for the core library. |
+| `tests/ScanManager.App.Tests` | xUnit tests for the app's imaging code (including cross-thread use of page images). |
 
 ### scancli
 

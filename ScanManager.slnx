@@ -7,6 +7,7 @@
     <Project Path="src/ScanManager.Wia/ScanManager.Wia.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/ScanManager.App.Tests/ScanManager.App.Tests.csproj" />
     <Project Path="tests/ScanManager.Core.Tests/ScanManager.Core.Tests.csproj" />
   </Folder>
 </Solution>
