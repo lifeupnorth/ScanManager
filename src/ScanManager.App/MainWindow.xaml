@@ -8,6 +8,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
         Title="ScanManager"
+        Icon="Assets/ScanManager.ico"
         Width="1320" Height="860" MinWidth="960" MinHeight="620"
         WindowStartupLocation="CenterScreen"
         AllowDrop="True">

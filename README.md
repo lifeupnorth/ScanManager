@@ -1,3 +1,5 @@
+<img src="src/ScanManager.App/Assets/ScanManager-256.png" width="96" alt="ScanManager icon" align="right">
+
 # ScanManager
 
 A Windows desktop app for scanning documents: scan from the flatbed or the document feeder (single- or double-sided), choose the scan area on a preview, tidy pages up, and save them as PDF, TIFF, PNG or JPEG.
