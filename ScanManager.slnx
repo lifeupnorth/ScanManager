@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ScanManager.App/ScanManager.App.csproj" />
+    <Project Path="src/ScanManager.Cli/ScanManager.Cli.csproj" />
+    <Project Path="src/ScanManager.Core/ScanManager.Core.csproj" />
+    <Project Path="src/ScanManager.Wia/ScanManager.Wia.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ScanManager.Core.Tests/ScanManager.Core.Tests.csproj" />
+  </Folder>
+</Solution>

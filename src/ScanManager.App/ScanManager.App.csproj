@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>ScanManager</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- The Fluent theme (ThemeMode) is still flagged as experimental. -->
+    <NoWarn>$(NoWarn);WPF0001</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ScanManager.Core\ScanManager.Core.csproj" />
+    <ProjectReference Include="..\ScanManager.Wia\ScanManager.Wia.csproj" />
+  </ItemGroup>
+
+</Project>

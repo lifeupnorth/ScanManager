@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <AssemblyName>scancli</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ScanManager.Core\ScanManager.Core.csproj" />
+    <ProjectReference Include="..\ScanManager.Wia\ScanManager.Wia.csproj" />
+  </ItemGroup>
+
+</Project>
