@@ -1,0 +1,16 @@
+<!--
+  Not a real project: restoring it downloads the Inno Setup compiler (ISCC.exe) from NuGet,
+  so building the installer needs no separately installed tools. Used by build.ps1.
+-->
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <InnoSetupVersion>7.1.0</InnoSetupVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageDownload Include="Tools.InnoSetup" Version="[$(InnoSetupVersion)]" />
+  </ItemGroup>
+
+</Project>
