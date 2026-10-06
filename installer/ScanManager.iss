@@ -53,6 +53,11 @@ SetupIconFile=..\src\ScanManager.App\Assets\ScanManager.ico
 UninstallDisplayIcon={app}\{#AppExe}
 UninstallDisplayName={#AppName}
 OutputBaseFilename=ScanManager-{#AppVersion}-{#Arch}-setup
+#ifdef Sign
+; build.ps1 defines Sign and passes the "signtool" command when code signing is configured.
+SignTool=signtool
+SignedUninstaller=yes
+#endif
 Compression=lzma2/ultra64
 SolidCompression=yes
 

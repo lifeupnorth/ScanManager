@@ -1,0 +1,19 @@
+<!--
+  Not a real project: restoring it downloads signtool.exe (Windows SDK build tools) and the
+  Azure Artifact Signing (formerly Trusted Signing) client from NuGet. build.ps1 restores it
+  only when code signing is configured.
+-->
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <WindowsSdkBuildToolsVersion>10.0.28000.2705</WindowsSdkBuildToolsVersion>
+    <ArtifactSigningClientVersion>1.0.128</ArtifactSigningClientVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageDownload Include="Microsoft.Windows.SDK.BuildTools" Version="[$(WindowsSdkBuildToolsVersion)]" />
+    <PackageDownload Include="Microsoft.ArtifactSigning.Client" Version="[$(ArtifactSigningClientVersion)]" />
+  </ItemGroup>
+
+</Project>

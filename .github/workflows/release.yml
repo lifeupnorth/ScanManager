@@ -33,9 +33,22 @@ jobs:
       - name: Test
         run: dotnet test ScanManager.slnx --configuration Release
 
+      # Code signing switches on when these repository variables/secrets are set; until then
+      # they are empty and the installers are built unsigned. See installer/signing.ps1.
       - name: Build installers
         shell: pwsh
         run: ./installer/build.ps1
+        env:
+          # Azure Artifact Signing (formerly Trusted Signing)
+          SIGN_ARTIFACT_ENDPOINT: ${{ vars.SIGN_ARTIFACT_ENDPOINT }}
+          SIGN_ARTIFACT_ACCOUNT: ${{ vars.SIGN_ARTIFACT_ACCOUNT }}
+          SIGN_ARTIFACT_PROFILE: ${{ vars.SIGN_ARTIFACT_PROFILE }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          # Or a .pfx certificate, base64-encoded
+          SIGN_CERT_PFX_BASE64: ${{ secrets.SIGN_CERT_PFX_BASE64 }}
+          SIGN_CERT_PASSWORD: ${{ secrets.SIGN_CERT_PASSWORD }}
 
       - uses: actions/upload-artifact@v7
         with:

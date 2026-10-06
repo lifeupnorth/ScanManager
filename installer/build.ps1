@@ -6,6 +6,9 @@
   Publishes the app self-contained for each runtime (so users don't need .NET installed)
   and compiles one Inno Setup installer per architecture into artifacts\installers.
 
+  When code signing is configured (see signing.ps1), the app's own executable and DLLs,
+  the installer and the uninstaller are all signed. Otherwise the build is unsigned.
+
 .EXAMPLE
   .\installer\build.ps1
   .\installer\build.ps1 -Runtime win-arm64
@@ -17,6 +20,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'signing.ps1')
 $root = Split-Path $PSScriptRoot -Parent
 $artifacts = Join-Path $root 'artifacts'
 $output = Join-Path $artifacts 'installers'
@@ -42,6 +46,17 @@ if (-not (Test-Path $iscc)) { throw "ISCC.exe not found at $iscc." }
 
 New-Item -ItemType Directory -Force $output | Out-Null
 
+$signing = Get-SigningMethod
+if ($signing) {
+    Write-Host "Code signing: $signing"
+    $null = Get-SigningTools # download once up front
+    # Inno Setup runs this for the installer and the embedded uninstaller ($q = quote, $f = file).
+    $signCommand = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File `$q$(Join-Path $PSScriptRoot 'sign.ps1')`$q `$f"
+}
+else {
+    Write-Host 'Code signing: off (configure it as described in installer\signing.ps1)'
+}
+
 foreach ($rid in $Runtime) {
     $arch = $rid -replace '^win-', ''
     $publishDir = Join-Path $artifacts "publish\$rid"
@@ -55,13 +70,24 @@ foreach ($rid in $Runtime) {
             --output $publishDir --verbosity quiet
     }
 
+    if ($signing) {
+        # Sign our own binaries; the .NET runtime files are already signed by Microsoft.
+        $ours = Get-ChildItem $publishDir -File | Where-Object { $_.Name -like 'ScanManager*' -and $_.Extension -in '.exe', '.dll' }
+        Write-Host "Signing $($ours.Count) app files..."
+        Invoke-Signing $ours.FullName
+    }
+
     Write-Host "Compiling the $arch installer..."
+    $isccArgs = @('/Qp', "/DAppVersion=$version", "/DArch=$arch", "/DSourceDir=$publishDir", "/O$output")
+    if ($signing) { $isccArgs += @('/DSign', "/Ssigntool=$signCommand") }
     Invoke-Checked "Compiling the $arch installer" {
-        & $iscc /Qp "/DAppVersion=$version" "/DArch=$arch" "/DSourceDir=$publishDir" "/O$output" `
-            (Join-Path $PSScriptRoot 'ScanManager.iss')
+        & $iscc @isccArgs (Join-Path $PSScriptRoot 'ScanManager.iss')
     }
 }
 
-Get-ChildItem $output -Filter "ScanManager-$version-*-setup.exe" |
-    Select-Object Name, @{ Name = 'Size (MB)'; Expression = { [math]::Round($_.Length / 1MB, 1) } } |
+# Report what was built and whether it is signed, so an unsigned release can't slip out unnoticed.
+$Runtime | ForEach-Object { Get-Item (Join-Path $output "ScanManager-$version-$($_ -replace '^win-', '')-setup.exe") } |
+    Select-Object Name,
+        @{ Name = 'Size (MB)'; Expression = { [math]::Round($_.Length / 1MB, 1) } },
+        @{ Name = 'Signed by'; Expression = { $cert = (Get-AuthenticodeSignature $_.FullName).SignerCertificate; if ($cert) { $cert.Subject } else { '(not signed)' } } } |
     Format-Table -AutoSize

@@ -67,6 +67,18 @@ This publishes the app self-contained for x64 and ARM64 and compiles an [Inno Se
 
 To publish a release, bump that version, commit, and push a matching tag (for example `v0.2.0`): the `release` workflow builds both installers and attaches them to a new GitHub release.
 
+### Code signing
+
+Builds are unsigned until signing is configured; then `build.ps1` signs the app's own executable and DLLs, the installer and its uninstaller (SHA-256, timestamped). `signtool` and the signing client are downloaded from NuGet. Configure one of these with environment variables (locally) or in the repository's **Settings → Secrets and variables → Actions** (for the release workflow):
+
+| Method | Settings |
+| --- | --- |
+| [Azure Artifact Signing](https://learn.microsoft.com/azure/artifact-signing/) (formerly Trusted Signing) | Variables `SIGN_ARTIFACT_ENDPOINT`, `SIGN_ARTIFACT_ACCOUNT`, `SIGN_ARTIFACT_PROFILE`; secrets `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET` for a service principal with the *Artifact Signing Certificate Profile Signer* role (locally, `az login` also works) |
+| Certificate file (`.pfx`) | `SIGN_CERT_FILE` (or, in CI, the secret `SIGN_CERT_PFX_BASE64`) and `SIGN_CERT_PASSWORD` |
+| Certificate in the Windows certificate store | `SIGN_CERT_THUMBPRINT`; also works for USB tokens and cloud-HSM tools that register their certificate there |
+
+`SIGN_TIMESTAMP_URL` overrides the timestamp server. Publicly trusted code-signing keys must now live on a hardware token or cloud HSM, so `.pfx` files are mainly for testing; for CI, Artifact Signing or a CA's cloud-signing service is the practical choice. A build ends with a table showing whether each installer is signed and by whom. Files can also be signed by hand with `installer/sign.ps1 <files>`.
+
 ## Project layout
 
 | Project | Purpose |
