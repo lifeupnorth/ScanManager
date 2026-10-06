@@ -5,7 +5,7 @@ A Windows desktop app for scanning documents: scan from the flatbed or the docum
 ## Features
 
 **Scanning**
-- Works with any scanner Windows can see through WIA — USB scanners and network/multifunction printers (Windows' built-in eSCL/WSD drivers).
+- Works with any scanner Windows can see through WIA (USB scanners and network multifunction printers). Network scanners that speak eSCL (AirScan/Mopria) are driven directly over the network, which is more reliable than going through Windows' generic driver — for example, it makes duplex work on printers where the WIA route rejects it.
 - Flatbed, document feeder, and duplex (both sides) when the scanner has them. Feeder jobs keep scanning until the feeder is empty.
 - Color, grayscale and black & white; resolution choices come from the device.
 - **Preview** scans the whole glass at low resolution; drag the frame (or its handles) to choose the area to scan, or pick a paper size preset (Letter, Legal, A4, A5, photo sizes, …). Arrow keys nudge the frame.
@@ -50,7 +50,8 @@ Debug builds also list a **Test scanner (simulated)** with a flatbed, feeder and
 | Project | Purpose |
 | --- | --- |
 | `src/ScanManager.Core` | Platform-neutral pieces: scanning abstractions (`IScannerBackend`, `ScanSettings`, capabilities), scan-area geometry and paper sizes, pixel operations (brightness/contrast, thresholding, blank-page detection), a dependency-free PDF writer, settings storage. |
-| `src/ScanManager.Wia` | `WiaScannerBackend`: scanner access through the WIA 2.0 Automation Library (late-bound COM, no interop assembly). All COM calls run on a dedicated STA thread so the UI never freezes. |
+| `src/ScanManager.Escl` | `EsclScannerBackend`: network scanners over eSCL (HTTP + XML): capabilities, status, scan jobs, page-by-page download. |
+| `src/ScanManager.Wia` | `WiaScannerBackend`: scanner access through the WIA 2.0 Automation Library (late-bound COM, no interop assembly), with all COM calls on a dedicated STA thread so the UI never freezes. Also `WindowsEsclDeviceSource`, which finds the eSCL scanners Windows has installed. |
 | `src/ScanManager.App` | The WPF app (MVVM with CommunityToolkit.Mvvm, Windows 11 Fluent theme). `RegionSelector` is the frame control used both for the scan area and for cropping. Page images are kept as PNG files in a temp session folder rather than in memory, which keeps long feeder jobs light and makes undo cheap. |
 | `src/ScanManager.Cli` | `scancli`, a small command-line tool over the same backend — useful for diagnosing driver issues. |
 | `tests/ScanManager.Core.Tests` | xUnit tests for the core library. |
@@ -73,7 +74,7 @@ dotnet run --project src/ScanManager.Cli -- scan 1 --source feeder --dpi 300 --c
 
 ## Adding another scanner technology
 
-Scanner access goes through `IScannerBackend` (`GetDevicesAsync`, `GetCapabilitiesAsync`, `ScanAsync`). A TWAIN or direct eSCL backend can be added by implementing it and registering it in `App.xaml.cs`; the UI picks up its devices automatically.
+Scanner access goes through `IScannerBackend` (`GetDevicesAsync`, `GetCapabilitiesAsync`, `ScanAsync`). A new backend (TWAIN, for example) is added by implementing it and registering it in `App.xaml.cs`; the UI picks up its devices automatically. Backends are asked in order and the first to report a device wins, so a scanner reachable over eSCL is not listed a second time through WIA.
 
 ## Settings and temporary files
 

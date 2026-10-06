@@ -17,6 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="..\ScanManager.Core\ScanManager.Core.csproj" />
     <ProjectReference Include="..\ScanManager.Wia\ScanManager.Wia.csproj" />
+    <ProjectReference Include="..\ScanManager.Escl\ScanManager.Escl.csproj" />
   </ItemGroup>
 
 </Project>

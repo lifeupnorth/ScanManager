@@ -9,27 +9,28 @@
 using System.Globalization;
 using ScanManager.Core.Geometry;
 using ScanManager.Core.Scanning;
+using ScanManager.Escl;
 using ScanManager.Wia;
 
-using var backend = new WiaScannerBackend();
+using var registry = new ScannerRegistry([new EsclScannerBackend(new WindowsEsclDeviceSource()), new WiaScannerBackend()]);
 
 try
 {
     string command = args.Length > 0 ? args[0].ToLowerInvariant() : "list";
-    var devices = await backend.GetDevicesAsync();
+    var (devices, _) = await registry.GetDevicesAsync();
 
     switch (command)
     {
         case "list":
             if (devices.Count == 0) Console.WriteLine("No WIA scanners found.");
             for (int i = 0; i < devices.Count; i++)
-                Console.WriteLine($"{i + 1}. {devices[i].Name}\n   {devices[i].Id}");
+                Console.WriteLine($"{i + 1}. {devices[i].Name} [{devices[i].BackendId}]\n   {devices[i].Id}");
             return 0;
 
         case "caps":
         {
             var device = PickDevice(devices, args);
-            var caps = await backend.GetCapabilitiesAsync(device.Id);
+            var caps = await registry.BackendFor(device).GetCapabilitiesAsync(device.Id);
             Console.WriteLine(device.Name);
             foreach (var s in caps.Sources)
             {
@@ -65,7 +66,7 @@ try
 
             Console.WriteLine($"Scanning from {device.Name} ({settings.Source}, {settings.Dpi} dpi, {settings.ColorMode})...");
             int count = 0;
-            await foreach (var image in backend.ScanAsync(device.Id, settings))
+            await foreach (var image in registry.BackendFor(device).ScanAsync(device.Id, settings))
             {
                 count++;
                 string path = count == 1 ? output : NumberedPath(output, count);
@@ -85,6 +86,8 @@ try
 catch (ScannerException ex)
 {
     Console.Error.WriteLine($"Scanner error ({ex.Kind}): {ex.Message}");
+    if (ex.InnerException is not null)
+        Console.Error.WriteLine($"\nDetails:\n{ex.InnerException}");
     return 1;
 }
 

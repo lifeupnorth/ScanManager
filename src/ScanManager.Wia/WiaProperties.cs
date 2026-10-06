@@ -23,7 +23,7 @@ internal static class WiaProperties
         dynamic? p = Find(properties, id);
         if (p is null) return null;
         try { return Convert.ToInt32((object)p.Value); }
-        catch (Exception ex) when (ex is FormatException or InvalidCastException or COMException) { return null; }
+        catch (Exception ex) when (ex is FormatException or OverflowException || IsRejection(ex)) { return null; }
     }
 
     public static string? GetString(object properties, int id)
@@ -31,7 +31,7 @@ internal static class WiaProperties
         dynamic? p = Find(properties, id);
         if (p is null) return null;
         try { return Convert.ToString((object)p.Value); }
-        catch (COMException) { return null; }
+        catch (Exception ex) when (IsRejection(ex)) { return null; }
     }
 
     /// <summary>Allowed values of a list-type property, or null if it isn't a list.</summary>
@@ -89,9 +89,17 @@ internal static class WiaProperties
             ((dynamic)property).Value = value;
             return true;
         }
-        catch (COMException)
+        catch (Exception ex) when (IsRejection(ex))
         {
             return false;
         }
     }
+
+    /// <summary>
+    /// How a driver says "I don't accept that value". Late-bound COM maps well-known
+    /// HRESULTs to .NET exceptions, so E_INVALIDARG arrives as ArgumentException and
+    /// E_NOTIMPL as NotImplementedException rather than as a COMException.
+    /// </summary>
+    private static bool IsRejection(Exception ex) =>
+        ex is COMException or ArgumentException or NotImplementedException or NotSupportedException or InvalidCastException;
 }

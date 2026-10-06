@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\ScanManager.Core\ScanManager.Core.csproj" />
+    <ProjectReference Include="..\..\src\ScanManager.Escl\ScanManager.Escl.csproj" />
   </ItemGroup>
 
 </Project>

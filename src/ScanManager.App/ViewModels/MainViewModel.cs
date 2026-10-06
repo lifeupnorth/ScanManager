@@ -263,7 +263,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
         Devices.Clear();
         foreach (var device in devices) Devices.Add(device);
-        SelectedDevice = Devices.FirstOrDefault(d => d.Id == previousId) ?? Devices.FirstOrDefault();
+        SelectedDevice = Devices.FirstOrDefault(d => string.Equals(d.Id, previousId, StringComparison.OrdinalIgnoreCase))
+                         ?? Devices.FirstOrDefault();
 
         if (Devices.Count == 0)
             StatusText = errors.Count > 0 ? errors[0] : "No scanners found. Connect or turn on a scanner, then click Refresh.";

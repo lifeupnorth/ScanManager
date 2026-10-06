@@ -4,6 +4,7 @@ using ScanManager.App.Services;
 using ScanManager.App.ViewModels;
 using ScanManager.Core.Scanning;
 using ScanManager.Core.Settings;
+using ScanManager.Escl;
 using ScanManager.Wia;
 
 namespace ScanManager.App;
@@ -17,7 +18,12 @@ public partial class App : Application
         base.OnStartup(e);
         DispatcherUnhandledException += OnUnhandledException;
 
-        var backends = new List<IScannerBackend> { new WiaScannerBackend() };
+        // eSCL first: network scanners it can reach directly are then not listed again through WIA.
+        var backends = new List<IScannerBackend>
+        {
+            new EsclScannerBackend(new WindowsEsclDeviceSource()),
+            new WiaScannerBackend(),
+        };
         bool simulator = e.Args.Contains("--simulator", StringComparer.OrdinalIgnoreCase);
 #if DEBUG
         simulator = true;

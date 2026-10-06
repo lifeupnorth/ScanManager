@@ -195,8 +195,15 @@ public sealed class WiaScannerBackend : IScannerBackend, IDisposable
             throw new ScannerException("This scanner has no document feeder.");
         }
 
-        // One page per transfer; the loop below keeps transferring until the feeder is empty.
-        if (fromFeeder) WiaProperties.TrySet(rootProps, DpsPages, 1);
+        // One sheet per transfer; the loop below keeps transferring until the feeder is empty.
+        // In duplex mode drivers count sides and may reject odd values (the Canon MF741C
+        // refuses 1), so ask for both sides of one sheet, falling back to "all pages".
+        if (fromFeeder)
+        {
+            int perSheet = settings.Source == ScanSource.Duplex ? 2 : 1;
+            if (!WiaProperties.TrySetExact(rootProps, DpsPages, perSheet))
+                WiaProperties.TrySetExact(rootProps, DpsPages, 0);
+        }
         WiaProperties.TrySetExact(rootProps, DpsPreview, settings.IsPreview ? 1 : 0);
 
         object item = FirstItem(device);
@@ -228,6 +235,13 @@ public sealed class WiaScannerBackend : IScannerBackend, IDisposable
                 if (page == 0)
                     throw new ScannerException("The document feeder is empty. Load the pages and try again.", ScannerErrorKind.FeederEmpty, ex);
                 break;
+            }
+            catch (ArgumentException ex) when (settings.Source == ScanSource.Duplex && page == 0)
+            {
+                // Seen with Windows' eSCL class driver: it lists duplex, then rejects the transfer.
+                throw new ScannerException(
+                    "This scanner's Windows driver doesn't accept double-sided scans. Choose \"Document feeder\" to scan one side at a time.",
+                    ScannerErrorKind.General, ex);
             }
 
             byte[] data = (byte[])((dynamic)imageFile).FileData.BinaryData;
@@ -377,6 +391,13 @@ public sealed class WiaScannerBackend : IScannerBackend, IDisposable
             // The connection may be stale (scanner restarted, network dropped): reconnect next time.
             if (deviceId is not null) _devices.Remove(deviceId);
             throw Translate(ex);
+        }
+        catch (Exception ex) when (ex is not ScannerException and not OperationCanceledException)
+        {
+            // Late-bound COM also surfaces driver failures as ArgumentException, InvalidCastException,
+            // RuntimeBinderException, ... Report them as scanner errors rather than crashing the app.
+            if (deviceId is not null) _devices.Remove(deviceId);
+            throw new ScannerException($"The scanner driver reported an error. {ex.Message}", ScannerErrorKind.General, ex);
         }
     }
 
