@@ -1,4 +1,5 @@
-* text=auto
+# LF everywhere, whatever core.autocrlf says, except the Visual Studio files below.
+* text=auto eol=lf
 *.cs text eol=crlf
 *.xaml text eol=crlf
 *.csproj text eol=crlf
