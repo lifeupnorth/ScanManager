@@ -65,7 +65,7 @@ pwsh installer/build.ps1
 
 This publishes the app self-contained for x64 and ARM64 and compiles an [Inno Setup](https://jrsoftware.org/isinfo.php) installer for each into `artifacts/installers`. The Inno Setup compiler is downloaded from NuGet, so nothing needs installing first. Use `-Runtime win-x64` (or `win-arm64`) to build just one. The version comes from `<Version>` in `Directory.Build.props`.
 
-To publish a release, bump that version, commit, and push a matching tag (for example `v0.2.0`): the `release` workflow builds both installers and attaches them to a new GitHub release.
+To publish a release, bump that version, add a section for it to [CHANGELOG.md](CHANGELOG.md), commit, and push a matching tag (for example `v0.3.0`): the `release` workflow builds both installers and attaches them to a new GitHub release, whose notes start with that section as "What's new". Preview the notes with `.\.github\release-notes.ps1 -Version 0.3.0`.
 
 ### Code signing
 

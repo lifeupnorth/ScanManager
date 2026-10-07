@@ -1,7 +1,8 @@
 name: release
 
 # Push a tag like v0.1.0 (matching <Version> in Directory.Build.props) to build the
-# installers and publish them as a GitHub release. Run it manually to just build them.
+# installers and publish them as a GitHub release, with that version's CHANGELOG.md section
+# as its What's new. Run it manually to just build them.
 on:
   push:
     tags: ['v*']
@@ -62,9 +63,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $files = (Get-ChildItem artifacts/installers/*.exe).FullName
-          # The installers section from release-notes.md, then GitHub's generated changelog. Its
-          # SmartScreen warning is only true of unsigned installers, so it goes once all are signed
-          $signed = @($files | Where-Object { (Get-AuthenticodeSignature $_).Status -ne 'Valid' }).Count -eq 0
-          $lines = Get-Content .github/release-notes.md -Encoding utf8 | Where-Object { -not ($signed -and $_ -match '<!-- unsigned only -->') }
-          $notes = (($lines -join "`n") -replace ' *<!-- unsigned only -->', '').Replace('{version}', $env:GITHUB_REF_NAME.TrimStart('v'))
+          # What's new from CHANGELOG.md and the Installers section (see release-notes.ps1),
+          # then GitHub's generated changelog
+          $notes = ./.github/release-notes.ps1 -Version $env:GITHUB_REF_NAME.TrimStart('v') -Installers $files
           gh release create $env:GITHUB_REF_NAME @files --title "ScanManager $env:GITHUB_REF_NAME" --notes $notes --generate-notes
