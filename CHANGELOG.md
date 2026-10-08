@@ -2,6 +2,10 @@
 
 What's new in each release. Add a section for the next version before pushing its tag: the release workflow copies it to the top of the GitHub release notes, as "What's new". Preview them with `.\.github\release-notes.ps1 -Version <version>`.
 
+## 0.2.2
+
+- The app icon is now the same size as other apps' icons: its tile fills the whole frame.
+
 ## 0.2.1
 
 - The app icon now fills its frame, so it's no longer smaller than other apps' icons in the taskbar, Start menu and on the desktop.
