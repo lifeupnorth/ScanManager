@@ -8,6 +8,8 @@ A Windows desktop app for scanning documents: scan from the flatbed or the docum
 
 ![Pages from a double-sided feeder scan, with the blank back skipped](docs/screenshots/pages.png)
 
+![The same view in the light theme](docs/screenshots/pages-light.png)
+
 ## Features
 
 **Scanning**
