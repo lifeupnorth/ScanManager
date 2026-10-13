@@ -2,6 +2,10 @@
 
 What's new in each release. Add a section for the next version before pushing its tag: the release workflow copies it to the top of the GitHub release notes, as "What's new". Preview them with `.\.github\release-notes.ps1 -Version <version>`.
 
+## 0.2.3
+
+- ScanManager is now open source, under the MIT License. The installer shows the license before installing and puts a copy, `LICENSE.txt`, next to the app.
+
 ## 0.2.2
 
 - The app icon is now the same size as other apps' icons: its tile fills the whole frame.
