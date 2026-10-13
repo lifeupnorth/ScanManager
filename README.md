@@ -2,7 +2,7 @@
 
 # ScanManager
 
-A Windows desktop app for scanning documents: scan from the flatbed or the document feeder (single- or double-sided), choose the scan area on a preview, tidy pages up, and save them as PDF, TIFF, PNG or JPEG.
+A Windows desktop app for scanning documents: scan from the flatbed or the document feeder (single- or double-sided), choose the scan area on a preview, tidy pages up, and save them as PDF, TIFF, PNG or JPEG. Everything stays on your computer: pages go straight from the scanner to the app, and nothing is uploaded anywhere.
 
 ![Choosing the scan area on a flatbed preview](docs/screenshots/preview.png)
 
