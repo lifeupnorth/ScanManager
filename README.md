@@ -122,3 +122,9 @@ Scanner access goes through `IScannerBackend` (`GetDevicesAsync`, `GetCapabiliti
 
 - Preferences: `%AppData%\ScanManager\settings.json`
 - Page images while the app runs: `%Temp%\ScanManager\session-*` (deleted on exit; leftovers from crashes are removed after two days)
+
+## License
+
+Copyright (C) 2026 Alexey Kuprienko
+
+ScanManager is free software under the [MIT License](LICENSE): you can use, copy, change and share it, including in your own projects, as long as you keep the copyright and license notice.
