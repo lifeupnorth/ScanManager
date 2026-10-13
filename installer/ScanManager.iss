@@ -16,7 +16,7 @@
 #define AppUrl "https://github.com/lifeupnorth/ScanManager"
 
 [Setup]
-; Never change AppId: Windows uses it to recognise upgrades and the uninstall entry.
+; Never change AppId: Windows uses it to recognize upgrades and the uninstall entry.
 AppId={{98D74232-B007-4F2A-BCE0-7B1A35871FF8}
 AppName={#AppName}
 AppVersion={#AppVersion}
@@ -49,6 +49,8 @@ CloseApplications=yes
 RestartApplications=no
 
 WizardStyle=modern
+; The license page: the MIT License text, which the user must accept to install.
+LicenseFile=..\LICENSE
 SetupIconFile=..\src\ScanManager.App\Assets\ScanManager.ico
 UninstallDisplayIcon={app}\{#AppExe}
 UninstallDisplayName={#AppName}
@@ -69,6 +71,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\LICENSE"; DestDir: "{app}"; DestName: "LICENSE.txt"; Flags: ignoreversion
 
 [Icons]
 Name: "{autoprograms}\{#AppName}"; Filename: "{app}\{#AppExe}"
