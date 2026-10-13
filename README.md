@@ -4,6 +4,10 @@
 
 A Windows desktop app for scanning documents: scan from the flatbed or the document feeder (single- or double-sided), choose the scan area on a preview, tidy pages up, and save them as PDF, TIFF, PNG or JPEG.
 
+![Choosing the scan area on a flatbed preview](docs/screenshots/preview.png)
+
+![Pages from a double-sided feeder scan, with the blank back skipped](docs/screenshots/pages.png)
+
 ## Features
 
 **Scanning**
