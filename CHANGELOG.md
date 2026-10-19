@@ -2,6 +2,18 @@
 
 What's new in each release. Add a section for the next version before pushing its tag: the release workflow copies it to the top of the GitHub release notes, as "What's new". Preview them with `.\.github\release-notes.ps1 -Version <version>`.
 
+## 0.2.4
+
+- Canceling a feeder scan keeps the page that was already on its way, then stops. The status says "Finishing the current page…" and then "Stopping the scanner…" while it does. Some scanners still feed the remaining sheets through.
+- Opening a second ScanManager window no longer deletes the pages of one left open for more than two days.
+- Saving several pages as PNG or JPEG asks before replacing existing files with the same numbered names (name_001.png, …).
+- Saving as TIFF and printing use far less memory: a 30-page color document went from over 800 MB to under 250 MB.
+- A network scanner that stops answering is reported as unreachable, instead of looking like a canceled scan. Errors from a busy scanner also appear within seconds.
+- If a page can't be processed (a damaged image, or a full disk), the scan stops with a clear message, and the pages scanned so far can still be undone. Damaged image files are named when you add images.
+- Screen readers now announce the name of every setting and read pages in the page list as "Page 1", "Page 2", ….
+- Dragging inside a scan frame that covers the whole glass draws a new frame.
+- Blank-page skipping no longer keeps an empty page because of a speck of dust near its right or bottom edge.
+
 ## 0.2.3
 
 - ScanManager is now open source, under the MIT License. The installer shows the license before installing and puts a copy, `LICENSE.txt`, next to the app.

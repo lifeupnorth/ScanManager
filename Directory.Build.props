@@ -4,7 +4,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <Version>0.2.3</Version>
+    <Version>0.2.4</Version>
     <Company>ScanManager</Company>
     <Product>ScanManager</Product>
   </PropertyGroup>
