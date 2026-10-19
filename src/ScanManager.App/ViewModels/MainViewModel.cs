@@ -593,11 +593,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand(CanExecute = nameof(IsScanning))]
-    private void CancelScan()
-    {
-        _scanCts?.Cancel();
-        StatusText = "Stopping the scan…";
-    }
+    private void CancelScan() => _scanCts?.Cancel();
 
     // ---- Page viewing and editing ---------------------------------------------------------
 
