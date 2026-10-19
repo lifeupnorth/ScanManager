@@ -16,7 +16,6 @@ internal static class WiaConstants
     public const int DpsVerticalSheetFeedSize = 3077;
     public const int DpsSheetFeederRegistration = 3078;
     public const int DpsDocumentHandlingCapabilities = 3086;
-    public const int DpsDocumentHandlingStatus = 3087;
     public const int DpsDocumentHandlingSelect = 3088;
     public const int DpsPages = 3096;
     public const int DpsPreview = 3100;
@@ -40,7 +39,6 @@ internal static class WiaConstants
     public const int Duplex = 0x004;
 
     // WIA_DPS_SHEET_FEEDER_REGISTRATION
-    public const int LeftJustified = 0;
     public const int Centered = 1;
     public const int RightJustified = 2;
 
@@ -57,10 +55,8 @@ internal static class WiaConstants
     // WIA_PROP_* subtypes as exposed by WIA.Property.SubType
     public const int SubTypeRange = 1;
     public const int SubTypeList = 2;
-    public const int SubTypeFlag = 3;
 
     // HRESULTs
-    public const int ErrorGeneral = unchecked((int)0x80210001);
     public const int ErrorPaperJam = unchecked((int)0x80210002);
     public const int ErrorPaperEmpty = unchecked((int)0x80210003);
     public const int ErrorPaperProblem = unchecked((int)0x80210004);

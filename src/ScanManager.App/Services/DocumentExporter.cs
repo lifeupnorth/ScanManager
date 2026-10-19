@@ -86,9 +86,12 @@ public static class DocumentExporter
     {
         // Undecoded frames: the encoder decodes each page as it writes it, so only one page is in
         // memory at a time instead of all of them (a 30-page color job went from 830 MB to under 50 MB).
-        var streams = pageFiles.Select(File.OpenRead).ToList();
+        var streams = new List<FileStream>();
         try
         {
+            // Opened inside the try, so a missing page still closes the files opened before it.
+            foreach (var file in pageFiles)
+                streams.Add(File.OpenRead(file));
             var frames = streams.Select(s => BitmapDecoder.Create(s,
                 BitmapCreateOptions.PreservePixelFormat | BitmapCreateOptions.IgnoreColorProfile, BitmapCacheOption.None).Frames[0]).ToList();
             var encoder = new TiffBitmapEncoder

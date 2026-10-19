@@ -37,6 +37,11 @@
             <Setter Property="Background" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
         </Style>
 
+        <!-- Screen readers read a list item's ToString(): give enum items their display names instead. -->
+        <Style x:Key="DisplayNameItem" TargetType="ComboBoxItem" BasedOn="{StaticResource {x:Type ComboBoxItem}}">
+            <Setter Property="AutomationProperties.Name" Value="{Binding Converter={StaticResource EnumDisplay}}" />
+        </Style>
+
         <Style x:Key="SectionPanel" TargetType="Border">
             <Setter Property="Background" Value="{DynamicResource LayerFillColorDefaultBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />

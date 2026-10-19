@@ -35,6 +35,9 @@ public sealed partial class PageViewModel : ObservableObject
 
     public string Title => $"Page {Number}";
 
+    /// <summary>What screen readers announce for the page in the page list.</summary>
+    public override string ToString() => Title;
+
     public Size PixelSize => new(PixelWidth, PixelHeight);
 
     public string Details

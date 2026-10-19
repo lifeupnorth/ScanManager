@@ -122,7 +122,7 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <ComboBox ItemsSource="{Binding Devices}" SelectedItem="{Binding SelectedDevice}"
-                                          DisplayMemberPath="Name" HorizontalAlignment="Stretch" />
+                                          DisplayMemberPath="Name" HorizontalAlignment="Stretch" AutomationProperties.Name="Scanner" />
                                 <Button Grid.Column="1" Margin="6,0,0,0" Padding="9,6" Command="{Binding RefreshDevicesCommand}"
                                         ToolTip="Look for scanners again" AutomationProperties.Name="Look for scanners again">
                                     <TextBlock Style="{StaticResource Icon}" Text="&#xE72C;" />
@@ -130,7 +130,8 @@
                             </Grid>
 
                             <TextBlock Text="Source" Style="{StaticResource FieldLabel}" />
-                            <ComboBox ItemsSource="{Binding Sources}" SelectedItem="{Binding SelectedSource}" HorizontalAlignment="Stretch">
+                            <ComboBox ItemsSource="{Binding Sources}" SelectedItem="{Binding SelectedSource}" HorizontalAlignment="Stretch"
+                                      AutomationProperties.Name="Source" ItemContainerStyle="{StaticResource DisplayNameItem}">
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding Converter={StaticResource EnumDisplay}}" />
@@ -142,7 +143,8 @@
                                       ToolTip="Drop pages that are (almost) empty, such as the blank backs of single-sided sheets" />
 
                             <TextBlock Text="Color" Style="{StaticResource FieldLabel}" />
-                            <ComboBox ItemsSource="{Binding ColorModes}" SelectedItem="{Binding SelectedColorMode}" HorizontalAlignment="Stretch">
+                            <ComboBox ItemsSource="{Binding ColorModes}" SelectedItem="{Binding SelectedColorMode}" HorizontalAlignment="Stretch"
+                                      AutomationProperties.Name="Color" ItemContainerStyle="{StaticResource DisplayNameItem}">
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding Converter={StaticResource EnumDisplay}}" />
@@ -152,11 +154,11 @@
 
                             <TextBlock Text="Resolution" Style="{StaticResource FieldLabel}" />
                             <ComboBox ItemsSource="{Binding Resolutions}" SelectedItem="{Binding SelectedDpi}"
-                                      ItemStringFormat="{}{0} dpi" HorizontalAlignment="Stretch" />
+                                      ItemStringFormat="{}{0} dpi" HorizontalAlignment="Stretch" AutomationProperties.Name="Resolution" />
 
                             <TextBlock Text="Scan area" Style="{StaticResource FieldLabel}" />
                             <ComboBox ItemsSource="{Binding AreaPresets}" SelectedItem="{Binding SelectedAreaPreset}"
-                                      DisplayMemberPath="Name" HorizontalAlignment="Stretch" />
+                                      DisplayMemberPath="Name" HorizontalAlignment="Stretch" AutomationProperties.Name="Scan area" />
                             <TextBlock Text="{Binding AreaDescription}" Style="{StaticResource Hint}" />
 
                             <DockPanel Margin="0,18,0,0">
@@ -169,13 +171,15 @@
                                 <TextBlock DockPanel.Dock="Right" Text="{Binding Brightness}" Width="32" TextAlignment="Right" />
                                 <TextBlock Text="Brightness" />
                             </DockPanel>
-                            <Slider Minimum="-100" Maximum="100" Value="{Binding Brightness}" TickFrequency="5" IsSnapToTickEnabled="True" />
+                            <Slider Minimum="-100" Maximum="100" Value="{Binding Brightness}" TickFrequency="5" IsSnapToTickEnabled="True"
+                                    AutomationProperties.Name="Brightness" />
 
                             <DockPanel Margin="0,8,0,0">
                                 <TextBlock DockPanel.Dock="Right" Text="{Binding Contrast}" Width="32" TextAlignment="Right" />
                                 <TextBlock Text="Contrast" />
                             </DockPanel>
-                            <Slider Minimum="-100" Maximum="100" Value="{Binding Contrast}" TickFrequency="5" IsSnapToTickEnabled="True" />
+                            <Slider Minimum="-100" Maximum="100" Value="{Binding Contrast}" TickFrequency="5" IsSnapToTickEnabled="True"
+                                    AutomationProperties.Name="Contrast" />
 
                             <StackPanel Visibility="{Binding IsBlackAndWhite, Converter={StaticResource BoolToVisibility}}">
                                 <DockPanel Margin="0,8,0,0">
@@ -183,7 +187,7 @@
                                     <TextBlock Text="Black &amp; white threshold" />
                                 </DockPanel>
                                 <Slider Minimum="20" Maximum="240" Value="{Binding BlackWhiteThreshold}" TickFrequency="5" IsSnapToTickEnabled="True"
-                                        ToolTip="Higher values turn more light-gray areas black" />
+                                        ToolTip="Higher values turn more light-gray areas black" AutomationProperties.Name="Black and white threshold" />
                             </StackPanel>
 
                             <TextBlock Text="{Binding AdjustmentNote}" Style="{StaticResource Hint}"
@@ -281,7 +285,6 @@
                                             ContentSize="{Binding SelectedPage.PixelSize}"
                                             Selection="{Binding CropSelection}"
                                             ShowSelection="{Binding IsCropMode}"
-                                            IsEditable="{Binding IsCropMode}"
                                             PlaceholderText="{Binding PagePlaceholder}" />
                     </DockPanel>
                 </TabItem>

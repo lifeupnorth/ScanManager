@@ -36,10 +36,6 @@ public sealed class RegionSelector : FrameworkElement
         nameof(ShowSelection), typeof(bool), typeof(RegionSelector),
         new FrameworkPropertyMetadata(true, FrameworkPropertyMetadataOptions.AffectsRender));
 
-    public static readonly DependencyProperty IsEditableProperty = DependencyProperty.Register(
-        nameof(IsEditable), typeof(bool), typeof(RegionSelector),
-        new FrameworkPropertyMetadata(true, FrameworkPropertyMetadataOptions.AffectsRender));
-
     public static readonly DependencyProperty PlaceholderTextProperty = DependencyProperty.Register(
         nameof(PlaceholderText), typeof(string), typeof(RegionSelector),
         new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
@@ -48,11 +44,10 @@ public sealed class RegionSelector : FrameworkElement
     public Size ContentSize { get => (Size)GetValue(ContentSizeProperty); set => SetValue(ContentSizeProperty, value); }
     public Rect Selection { get => (Rect)GetValue(SelectionProperty); set => SetValue(SelectionProperty, value); }
     public bool ShowSelection { get => (bool)GetValue(ShowSelectionProperty); set => SetValue(ShowSelectionProperty, value); }
-    public bool IsEditable { get => (bool)GetValue(IsEditableProperty); set => SetValue(IsEditableProperty, value); }
     public string? PlaceholderText { get => (string?)GetValue(PlaceholderTextProperty); set => SetValue(PlaceholderTextProperty, value); }
 
     [Flags]
-    private enum Edge { None = 0, Left = 1, Top = 2, Right = 4, Bottom = 8, Move = 16 }
+    internal enum Edge { None = 0, Left = 1, Top = 2, Right = 4, Bottom = 8, Move = 16 }
 
     private Edge _dragEdges;
     private bool _creating;
@@ -66,7 +61,7 @@ public sealed class RegionSelector : FrameworkElement
         ClipToBounds = true;
     }
 
-    private bool CanEdit => IsEditable && ShowSelection && IsEnabled;
+    private bool CanEdit => ShowSelection && IsEnabled;
 
     // ---- Geometry -----------------------------------------------------------------------
 
@@ -171,7 +166,8 @@ public sealed class RegionSelector : FrameworkElement
 
     // ---- Mouse --------------------------------------------------------------------------
 
-    private Edge HitTest(Point p, Rect selection)
+    /// <summary>What a press at <paramref name="p"/> grabs: an edge or corner, the whole frame, or nothing (draw a new frame).</summary>
+    internal static Edge HitTest(Point p, Rect selection, Rect content)
     {
         double t = GripTolerance + HandleSize / 2;
         bool nearLeft = Math.Abs(p.X - selection.Left) <= t, nearRight = Math.Abs(p.X - selection.Right) <= t;
@@ -184,7 +180,10 @@ public sealed class RegionSelector : FrameworkElement
         else if (withinY && nearRight) edge |= Edge.Right;
         if (withinX && nearTop) edge |= Edge.Top;
         else if (withinX && nearBottom) edge |= Edge.Bottom;
-        if (edge == Edge.None && selection.Contains(p)) edge = Edge.Move;
+        // A frame covering all the content can't move, and leaves no room outside it to start a
+        // new one, so inside it a drag draws a new frame instead.
+        bool fillsContent = selection.Width >= content.Width - 1 && selection.Height >= content.Height - 1;
+        if (edge == Edge.None && selection.Contains(p) && !fillsContent) edge = Edge.Move;
         return edge;
     }
 
@@ -207,7 +206,7 @@ public sealed class RegionSelector : FrameworkElement
         if (content.IsEmpty) return;
         var p = e.GetPosition(this);
         var selection = ToScreen(Selection, content);
-        var edge = HitTest(p, selection);
+        var edge = HitTest(p, selection, content);
 
         if (edge == Edge.None)
         {
@@ -237,7 +236,7 @@ public sealed class RegionSelector : FrameworkElement
 
         if (!IsMouseCaptured || _dragEdges == Edge.None)
         {
-            Cursor = CanEdit ? CursorFor(HitTest(p, ToScreen(Selection, content))) : null;
+            Cursor = CanEdit ? CursorFor(HitTest(p, ToScreen(Selection, content), content)) : null;
             return;
         }
 
