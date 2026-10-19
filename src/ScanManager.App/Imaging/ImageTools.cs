@@ -127,6 +127,9 @@ public static class ImageTools
     public static BitmapSource Create(int width, int height, double dpi, PixelFormat format, byte[] pixels, int stride) =>
         Freeze(BitmapSource.Create(width, height, dpi, dpi, format, null, pixels, stride));
 
+    /// <summary>The image's dpi, or 96 when the file carries none or a nonsense value.</summary>
+    public static double ValidDpi(double dpi) => dpi is > 1 and < 10000 ? dpi : 96;
+
     public static bool IsBlackWhite(BitmapSource image) =>
         image.Format == PixelFormats.BlackWhite || image.Format == PixelFormats.Indexed1 && IsGrayPalette(image.Palette);
 

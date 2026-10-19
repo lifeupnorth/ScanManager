@@ -144,7 +144,7 @@ public sealed class EsclScannerBackend : IScannerBackend, IDisposable
                 yield return new ScannedImage(data, dpi, page, delivered, brightness is not null || settings.Brightness == 0,
                     contrast is not null || settings.Contrast == 0);
 
-                if (!feeder || settings.MaxPages > 0 && page >= settings.MaxPages)
+                if (!feeder)
                     yield break;
             }
         }

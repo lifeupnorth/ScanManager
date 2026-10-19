@@ -19,7 +19,7 @@ A Windows desktop app for scanning documents: scan from the flatbed or the docum
 - **Preview** scans the whole glass at low resolution; drag the frame (or its handles) to choose the area to scan, or pick a paper size preset (Letter, Legal, A4, A5, photo sizes, …). Arrow keys nudge the frame.
 - Brightness / contrast, and a threshold for black & white. When the scanner has no hardware control for these (common on network scanners), they are applied in software after scanning.
 - Skip blank pages (for feeder jobs) — handy for the empty backs of single-sided sheets in a duplex scan.
-- Cancel a feeder job between pages.
+- Cancel a feeder job at any time.
 - Choose a default source in **Settings** (for example the document feeder); it is selected at startup and whenever you switch scanners. If a scanner lacks it, the closest source it has is used.
 
 **Pages**

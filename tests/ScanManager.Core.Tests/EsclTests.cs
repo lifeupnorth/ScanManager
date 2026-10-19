@@ -76,7 +76,7 @@ public class EsclTests
         Assert.Contains("image/jpeg", caps.Platen.DocumentFormats);
         Assert.Equal([100, 200, 300, 400, 600], caps.AdfSimplex!.Resolutions);
         Assert.NotNull(caps.AdfDuplex);
-        Assert.Equal(new EsclRange(0, 100, 50), caps.Brightness);
+        Assert.Equal(new EsclRange(0, 100), caps.Brightness);
         Assert.Null(caps.Contrast);
     }
 

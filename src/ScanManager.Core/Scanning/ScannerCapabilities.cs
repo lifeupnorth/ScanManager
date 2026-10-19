@@ -28,12 +28,6 @@ public sealed record SourceCapabilities(
     ValueRange? Brightness,
     ValueRange? Contrast)
 {
-    /// <summary>Preview scans only make sense when the page stays on the glass.</summary>
-    public bool SupportsPreview => Source == ScanSource.Flatbed;
-
-    public int ClosestResolution(int dpi) =>
-        Resolutions.Count == 0 ? dpi : Resolutions.MinBy(r => Math.Abs(r - dpi));
-
     /// <summary>The lowest resolution suitable for a quick preview scan (ideally 75-100 dpi).</summary>
     public int PreviewResolution
     {
@@ -50,6 +44,4 @@ public sealed record SourceCapabilities(
 public sealed record ScannerCapabilities(IReadOnlyList<SourceCapabilities> Sources)
 {
     public SourceCapabilities? For(ScanSource source) => Sources.FirstOrDefault(s => s.Source == source);
-
-    public bool Supports(ScanSource source) => For(source) is not null;
 }

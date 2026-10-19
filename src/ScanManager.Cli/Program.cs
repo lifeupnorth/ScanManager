@@ -22,7 +22,7 @@ try
     switch (command)
     {
         case "list":
-            if (devices.Count == 0) Console.WriteLine("No WIA scanners found.");
+            if (devices.Count == 0) Console.WriteLine("No scanners found.");
             for (int i = 0; i < devices.Count; i++)
                 Console.WriteLine($"{i + 1}. {devices[i].Name} [{devices[i].BackendId}]\n   {devices[i].Id}");
             return 0;
@@ -62,19 +62,22 @@ try
                 Area = ParseArea(Option("--area")),
                 IsPreview = args.Contains("--preview"),
             };
-            string output = Option("--out") ?? "scan.bmp";
+            string? output = Option("--out");
+            string? first = null;
 
             Console.WriteLine($"Scanning from {device.Name} ({settings.Source}, {settings.Dpi} dpi, {settings.ColorMode})...");
             int count = 0;
             await foreach (var image in registry.BackendFor(device).ScanAsync(device.Id, settings))
             {
                 count++;
-                string path = count == 1 ? output : NumberedPath(output, count);
+                string target = output ?? "scan" + ExtensionOf(image.Data);
+                first ??= target;
+                string path = count == 1 ? target : NumberedPath(target, count);
                 await File.WriteAllBytesAsync(path, image.Data);
                 Console.WriteLine($"  page {image.PageNumber}: {image.Data.Length:N0} bytes, {image.Dpi} dpi, {image.DeliveredColorMode} -> {path}");
             }
             if (count > 1)
-                File.Move(output, NumberedPath(output, 1), overwrite: true);
+                File.Move(first!, NumberedPath(first!, 1), overwrite: true);
             return 0;
         }
 
@@ -99,7 +102,7 @@ string? Option(string name)
 
 static ScannerInfo PickDevice(IReadOnlyList<ScannerInfo> devices, string[] args)
 {
-    if (devices.Count == 0) throw new ScannerException("No WIA scanners found.", ScannerErrorKind.NotFound);
+    if (devices.Count == 0) throw new ScannerException("No scanners found.", ScannerErrorKind.NotFound);
     int index = args.Length > 1 && int.TryParse(args[1], out int n) ? n - 1 : 0;
     if (index < 0 || index >= devices.Count) throw new ScannerException($"There is no scanner #{index + 1}.", ScannerErrorKind.NotFound);
     return devices[index];
@@ -111,6 +114,15 @@ static ScanArea? ParseArea(string? text)
     var parts = text.Split(',').Select(p => double.Parse(p, CultureInfo.InvariantCulture)).ToArray();
     return parts.Length == 4 ? new ScanArea(parts[0], parts[1], parts[2], parts[3]) : null;
 }
+
+// Without --out, name the file after what the scanner sent (eSCL: JPEG or PNG, WIA: usually BMP).
+static string ExtensionOf(byte[] data) => data switch
+{
+    [0xFF, 0xD8, ..] => ".jpg",
+    [0x89, (byte)'P', (byte)'N', (byte)'G', ..] => ".png",
+    [(byte)'I', (byte)'I', ..] or [(byte)'M', (byte)'M', ..] => ".tif",
+    _ => ".bmp",
+};
 
 static string NumberedPath(string path, int page) =>
     Path.Combine(Path.GetDirectoryName(path) ?? "", $"{Path.GetFileNameWithoutExtension(path)}_{page:000}{Path.GetExtension(path)}");

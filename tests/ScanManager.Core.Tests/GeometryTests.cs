@@ -97,14 +97,6 @@ public class GeometryTests
         Assert.Equal(expected, caps.PreviewResolution);
     }
 
-    [Fact]
-    public void ClosestResolution_snaps_to_a_supported_value()
-    {
-        var caps = new SourceCapabilities(ScanSource.Flatbed, Bed, [150, 300, 600], [ColorMode.Color], null, null);
-        Assert.Equal(300, caps.ClosestResolution(400));
-        Assert.Equal(150, caps.ClosestResolution(72));
-    }
-
     [Theory]
     [InlineData("Canon MF741C/743C (d5:97:d9) (2) (d5:97:d9) (d5  (d5:97:d9) (2)", "Canon MF741C/743C (d5:97:d9) (2)")]
     [InlineData("HP ScanJet Pro 2500", "HP ScanJet Pro 2500")]

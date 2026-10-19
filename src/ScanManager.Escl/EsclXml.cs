@@ -11,7 +11,7 @@ public sealed record EsclInputCaps(
     IReadOnlyList<string> ColorModes,
     IReadOnlyList<string> DocumentFormats);
 
-public sealed record EsclRange(int Min, int Max, int Normal);
+public sealed record EsclRange(int Min, int Max);
 
 public sealed record EsclCapabilities(
     string Version,
@@ -87,8 +87,7 @@ internal static class EsclXml
     {
         if (element is null) return null;
         int min = Int(element.Element(Scan + "Min")), max = Int(element.Element(Scan + "Max"));
-        int normal = element.Element(Scan + "Normal") is { } n ? Int(n) : (min + max) / 2;
-        return max > min ? new EsclRange(min, max, normal) : null;
+        return max > min ? new EsclRange(min, max) : null;
     }
 
     public static EsclStatus ParseStatus(string xml)

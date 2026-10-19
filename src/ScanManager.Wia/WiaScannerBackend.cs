@@ -249,7 +249,6 @@ public sealed class WiaScannerBackend : IScannerBackend, IDisposable
             output.TryWrite(new ScannedImage(data, dpi, page, delivered, brightnessApplied, contrastApplied));
 
             if (!fromFeeder) break;
-            if (settings.MaxPages > 0 && page >= settings.MaxPages) break;
         }
     }
 

@@ -50,7 +50,6 @@ public sealed class SimulatedScannerBackend : IScannerBackend, IDisposable
             ScanSource.Duplex => SheetsInFeeder * 2,
             _ => 1,
         };
-        if (settings.MaxPages > 0) images = Math.Min(images, settings.MaxPages);
 
         int dpi = Resolutions.MinBy(r => Math.Abs(r - settings.Dpi));
         var delivered = settings.ColorMode == ColorMode.Color ? ColorMode.Color : ColorMode.Grayscale;

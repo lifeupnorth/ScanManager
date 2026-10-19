@@ -20,7 +20,4 @@ public sealed record ScanSettings
 
     /// <summary>True for a low-resolution preview of the whole bed.</summary>
     public bool IsPreview { get; init; }
-
-    /// <summary>Stop the feeder after this many images; 0 means until the feeder is empty.</summary>
-    public int MaxPages { get; init; }
 }

@@ -2,7 +2,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
-using System.Windows.Markup;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 using ScanManager.App.Imaging;
@@ -88,15 +88,28 @@ public sealed class DialogService(Window owner) : IDialogService
         if (dialog.ShowDialog() != true) return false;
 
         var pageSize = new Size(dialog.PrintableAreaWidth, dialog.PrintableAreaHeight);
-        const double margin = 24; // keep clear of the printer's unprintable edge (1/4 inch)
-        var document = new FixedDocument();
-        document.DocumentPaginator.PageSize = pageSize;
+        dialog.PrintDocument(new PagePaginator(pageFiles, pageSize), jobName);
+        return true;
+    }
 
-        foreach (var file in pageFiles)
+    /// <summary>
+    /// Builds each printed page only when the spooler asks for it, so a long document never
+    /// holds more than one page image in memory.
+    /// </summary>
+    internal sealed class PagePaginator(IReadOnlyList<string> pageFiles, Size pageSize) : DocumentPaginator
+    {
+        private const double Margin = 24; // keep clear of the printer's unprintable edge (1/4 inch)
+
+        public override bool IsPageCountValid => true;
+        public override int PageCount => pageFiles.Count;
+        public override Size PageSize { get => pageSize; set => pageSize = value; }
+        public override IDocumentPaginatorSource? Source => null;
+
+        public override DocumentPage GetPage(int pageNumber)
         {
-            BitmapSource image = ImageTools.LoadFile(file);
-            double width = image.PixelWidth / ValidDpi(image.DpiX) * 96;
-            double height = image.PixelHeight / ValidDpi(image.DpiY) * 96;
+            BitmapSource image = ImageTools.LoadFile(pageFiles[pageNumber]);
+            double width = image.PixelWidth / ImageTools.ValidDpi(image.DpiX) * 96;
+            double height = image.PixelHeight / ImageTools.ValidDpi(image.DpiY) * 96;
 
             // Turn landscape scans sideways on portrait paper (and vice versa) to use the sheet best.
             if (width > height != pageSize.Width > pageSize.Height)
@@ -106,21 +119,13 @@ public sealed class DialogService(Window owner) : IDialogService
             }
 
             // Print at true size, shrinking only when the scan is larger than the paper.
-            double scale = Math.Min(1.0, Math.Min((pageSize.Width - 2 * margin) / width, (pageSize.Height - 2 * margin) / height));
-            var picture = new Image { Source = image, Width = width * scale, Height = height * scale, Stretch = System.Windows.Media.Stretch.Fill };
-            var page = new FixedPage { Width = pageSize.Width, Height = pageSize.Height };
-            FixedPage.SetLeft(picture, (pageSize.Width - picture.Width) / 2);
-            FixedPage.SetTop(picture, margin);
-            page.Children.Add(picture);
+            double scale = Math.Min(1.0, Math.Min((pageSize.Width - 2 * Margin) / width, (pageSize.Height - 2 * Margin) / height));
+            var visual = new DrawingVisual();
+            using (var dc = visual.RenderOpen())
+                dc.DrawImage(image, new Rect((pageSize.Width - width * scale) / 2, Margin, width * scale, height * scale));
 
-            var content = new PageContent();
-            ((IAddChild)content).AddChild(page);
-            document.Pages.Add(content);
+            var bounds = new Rect(pageSize);
+            return new DocumentPage(visual, pageSize, bounds, bounds);
         }
-
-        dialog.PrintDocument(document.DocumentPaginator, jobName);
-        return true;
     }
-
-    private static double ValidDpi(double dpi) => dpi is > 1 and < 10000 ? dpi : 96;
 }

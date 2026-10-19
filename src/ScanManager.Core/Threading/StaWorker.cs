@@ -21,8 +21,6 @@ public sealed class StaWorker : IDisposable
         _thread.Start();
     }
 
-    public bool IsCurrentThread => Thread.CurrentThread == _thread;
-
     public Task<T> InvokeAsync<T>(Func<T> func)
     {
         var tcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);

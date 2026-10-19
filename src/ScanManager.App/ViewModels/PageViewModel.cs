@@ -41,7 +41,7 @@ public sealed partial class PageViewModel : ObservableObject
     {
         get
         {
-            double dpi = Dpi > 1 ? Dpi : 96;
+            double dpi = ImageTools.ValidDpi(Dpi);
             return $"{PixelWidth} × {PixelHeight} px · {Dpi:0} dpi · {PixelWidth / dpi:0.##} × {PixelHeight / dpi:0.##} in";
         }
     }

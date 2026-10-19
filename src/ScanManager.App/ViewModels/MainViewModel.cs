@@ -596,7 +596,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private void CancelScan()
     {
         _scanCts?.Cancel();
-        StatusText = "Cancelling after the current page…";
+        StatusText = "Stopping the scan…";
     }
 
     // ---- Page viewing and editing ---------------------------------------------------------
