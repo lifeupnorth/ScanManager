@@ -70,6 +70,23 @@ public sealed class PageSafetyTests : IDisposable
     }
 
     [Fact]
+    public async Task Canceling_keeps_the_page_on_its_way_and_says_the_scanner_is_stopping()
+    {
+        var backend = new CancelDuringPageBackend(PngBytes());
+        using var vm = new MainViewModel(new ScannerRegistry([backend]), new PageStore(), new RecordingDialogs(),
+            new SettingsStore(Path.Combine(_dir, "settings.json")));
+        await vm.InitializeAsync();
+        backend.ClickCancel = () => vm.CancelScanCommand.Execute(null);
+        backend.ReadStatus = () => vm.StatusText;
+
+        await vm.ScanCommand.ExecuteAsync(null);
+
+        Assert.Single(vm.Pages);
+        Assert.Equal("Stopping the scanner…", backend.StatusWhileStopping);
+        Assert.Equal("Scan cancelled. Scanned 1 page.", vm.StatusText);
+    }
+
+    [Fact]
     public async Task A_damaged_image_is_named_and_the_good_ones_are_added()
     {
         var dialogs = new RecordingDialogs();
@@ -165,6 +182,33 @@ public sealed class PageSafetyTests : IDisposable
         Assert.Single(dialogs.Errors);
         Assert.True(backend.Token.IsCancellationRequested); // a backend scanning ahead (WIA) must stop feeding
         Assert.True(vm.UndoCommand.CanExecute(null));
+    }
+
+    /// <summary>A feeder canceled while its first page is on the way, like the MF741C retest.</summary>
+    private sealed class CancelDuringPageBackend(byte[] page) : IScannerBackend
+    {
+        public Action? ClickCancel { get; set; }
+        public Func<string>? ReadStatus { get; set; }
+        public string? StatusWhileStopping { get; private set; }
+
+        public string BackendId => "fake";
+
+        public Task<IReadOnlyList<ScannerInfo>> GetDevicesAsync(CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyList<ScannerInfo>>([new ScannerInfo("dev", "dev", BackendId)]);
+
+        public Task<ScannerCapabilities> GetCapabilitiesAsync(string deviceId, CancellationToken ct = default) =>
+            Task.FromResult(new ScannerCapabilities(
+                [new SourceCapabilities(ScanSource.Feeder, new SizeInches(8.5, 14), [300], [ColorMode.Color], null, null)]));
+
+        public async IAsyncEnumerable<ScannedImage> ScanAsync(string deviceId, ScanSettings settings,
+            [EnumeratorCancellation] CancellationToken ct = default)
+        {
+            await Task.Yield();
+            ClickCancel?.Invoke();
+            yield return new ScannedImage(page, 300, 1, ColorMode.Color, true, true);
+            StatusWhileStopping = ReadStatus?.Invoke(); // where eSCL deletes the job
+            ct.ThrowIfCancellationRequested();
+        }
     }
 
     /// <summary>A feeder whose second page is not an image.</summary>

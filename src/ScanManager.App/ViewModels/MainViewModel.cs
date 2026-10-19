@@ -562,7 +562,12 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         try
         {
             await foreach (var image in _registry.BackendFor(device).ScanAsync(device.Id, settings, cts.Token))
+            {
                 await onImage(image);
+                // Canceled during this page: the backend now stops the scanner, which can take several
+                // seconds while it is still feeding paper.
+                if (cts.IsCancellationRequested) StatusText = "Stopping the scanner…";
+            }
             return ScanOutcome.Completed;
         }
         catch (OperationCanceledException)
