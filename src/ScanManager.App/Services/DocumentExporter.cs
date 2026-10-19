@@ -95,6 +95,11 @@ public static class DocumentExporter
 
     private static List<string> SaveImages(IReadOnlyList<string> pageFiles, string path, ExportFormat format, int jpegQuality)
     {
+        // The Save dialog only asks before replacing the name the user typed, not the numbered files.
+        if (pageFiles.Count > 1 &&
+            Enumerable.Range(1, pageFiles.Count).Select(i => NumberedPath(path, i)).FirstOrDefault(File.Exists) is { } existing)
+            throw new IOException($"{Path.GetFileName(existing)} already exists. Choose another name so it isn't replaced.");
+
         var written = new List<string>();
         for (int i = 0; i < pageFiles.Count; i++)
         {

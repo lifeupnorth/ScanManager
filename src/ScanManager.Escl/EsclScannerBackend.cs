@@ -109,7 +109,7 @@ public sealed class EsclScannerBackend : IScannerBackend, IDisposable
         {
             job = await client.CreateJobAsync(request, cancellationToken);
         }
-        catch (Exception ex) when (ex is EsclHttpException or HttpRequestException)
+        catch (Exception ex) when (ex is EsclHttpException or HttpRequestException || IsTimeout(ex, cancellationToken))
         {
             throw await ExplainAsync(client, ex, feeder);
         }
@@ -125,7 +125,7 @@ public sealed class EsclScannerBackend : IScannerBackend, IDisposable
                 {
                     data = await client.NextDocumentAsync(job, cancellationToken);
                 }
-                catch (Exception ex) when (ex is EsclHttpException or HttpRequestException)
+                catch (Exception ex) when (ex is EsclHttpException or HttpRequestException || IsTimeout(ex, cancellationToken))
                 {
                     throw await ExplainAsync(client, ex, feeder);
                 }
@@ -263,7 +263,7 @@ public sealed class EsclScannerBackend : IScannerBackend, IDisposable
     /// <summary>Turns a failed request into the most specific message the scanner's status allows.</summary>
     private static async Task<ScannerException> ExplainAsync(EsclClient client, Exception error, bool feeder)
     {
-        if (error is HttpRequestException)
+        if (error is HttpRequestException or OperationCanceledException)
             return Unreachable(client, error);
 
         try
@@ -279,6 +279,10 @@ public sealed class EsclScannerBackend : IScannerBackend, IDisposable
             ? new ScannerException("The scanner is busy or not ready. Try again in a moment.", ScannerErrorKind.Busy, error)
             : new ScannerException(error.Message, ScannerErrorKind.General, error);
     }
+
+    /// <summary>HttpClient reports its timeout as a cancellation; only the caller's token means the user cancelled.</summary>
+    private static bool IsTimeout(Exception ex, CancellationToken ct) =>
+        ex is OperationCanceledException && !ct.IsCancellationRequested;
 
     private static ScannerException Unreachable(EsclClient client, Exception error) => new(
         $"The scanner can't be reached at {client.BaseUri.Host}. Check that it is turned on and connected to the network.",

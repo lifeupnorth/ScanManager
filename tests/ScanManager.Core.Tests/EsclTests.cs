@@ -174,6 +174,22 @@ public class EsclTests
     }
 
     [Fact]
+    public async Task A_scanner_that_stops_answering_is_reported_offline_not_cancelled()
+    {
+        var scanner = new FakeScanner { Pages = 1, Stalls = true };
+        var source = new FixedSource(new EsclDevice("dev", "Test MFP", new Uri("http://scanner.test/eSCL")));
+        using var backend = new EsclScannerBackend(source, new HttpClient(scanner) { Timeout = TimeSpan.FromMilliseconds(200) });
+        Assert.Single(await backend.GetDevicesAsync());
+
+        var ex = await Assert.ThrowsAsync<ScannerException>(async () =>
+        {
+            await foreach (var _ in backend.ScanAsync("dev", new ScanSettings { Source = ScanSource.Feeder })) { }
+        });
+        Assert.Equal(ScannerErrorKind.Offline, ex.Kind);
+        Assert.True(scanner.JobDeleted);
+    }
+
+    [Fact]
     public async Task Unreachable_scanners_are_left_out_of_the_device_list()
     {
         var source = new FixedSource(new EsclDevice("dev", "Test MFP", new Uri("http://scanner.test/eSCL")));
@@ -206,6 +222,8 @@ public class EsclTests
     private sealed class FakeScanner : HttpMessageHandler
     {
         public int Pages { get; init; }
+        /// <summary>Never answers a page request, like a scanner that lost power mid-page.</summary>
+        public bool Stalls { get; init; }
         public string AdfState { get; init; } = "ScannerAdfLoaded";
         public string? LastJobXml { get; private set; }
         public bool JobDeleted { get; private set; }
@@ -227,6 +245,7 @@ public class EsclTests
             }
             if (request.Method == HttpMethod.Get && path == "/eSCL/ScanJobs/42/NextDocument")
             {
+                if (Stalls) await Task.Delay(Timeout.Infinite, ct);
                 if (_delivered >= Pages) return new HttpResponseMessage(HttpStatusCode.NotFound);
                 _delivered++;
                 return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent([0xFF, 0xD8, (byte)_delivered]) };

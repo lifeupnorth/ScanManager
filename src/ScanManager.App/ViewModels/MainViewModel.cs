@@ -575,8 +575,17 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             _dialogs.ShowError(ex.Message, "Scan failed");
             return ScanOutcome.Failed;
         }
+        catch (Exception ex) when (ex is IOException or NotSupportedException or FormatException)
+        {
+            // An image that won't decode, or a full disk while storing the page.
+            StatusText = "Scan stopped: a page couldn't be processed.";
+            _dialogs.ShowError($"A page couldn't be processed, so the scan was stopped.\n\n{ex.Message}", "Scan failed");
+            return ScanOutcome.Failed;
+        }
         finally
         {
+            // Stops a backend that scans ahead of us (WIA) when we leave early.
+            cts.Cancel();
             _scanCts = null;
             IsScanning = false;
             IsBusy = false;
