@@ -41,7 +41,9 @@ public static class DocumentExporter
     };
 
     /// <summary>Saves the pages and returns the files written.</summary>
-    public static IReadOnlyList<string> Save(IReadOnlyList<string> pageFiles, string path, ExportFormat format, int jpegQuality)
+    /// <param name="replaceNumbered">Overwrite existing name_001… files; without it a multi-page image save refuses to.</param>
+    public static IReadOnlyList<string> Save(IReadOnlyList<string> pageFiles, string path, ExportFormat format, int jpegQuality,
+        bool replaceNumbered = false)
     {
         if (pageFiles.Count == 0) throw new InvalidOperationException("There are no pages to save.");
 
@@ -58,7 +60,7 @@ public static class DocumentExporter
                 return [path];
 
             default:
-                return SaveImages(pageFiles, path, format, jpegQuality);
+                return SaveImages(pageFiles, path, format, jpegQuality, replaceNumbered);
         }
     }
 
@@ -104,11 +106,17 @@ public static class DocumentExporter
         }
     }
 
-    private static List<string> SaveImages(IReadOnlyList<string> pageFiles, string path, ExportFormat format, int jpegQuality)
+    /// <summary>
+    /// The numbered files a multi-page PNG/JPEG save to <paramref name="path"/> would overwrite. The Save
+    /// dialog only asks about the name the user typed, so the caller must ask about these.
+    /// </summary>
+    public static IReadOnlyList<string> ExistingNumberedFiles(string path, int pageCount) =>
+        pageCount > 1 ? Enumerable.Range(1, pageCount).Select(i => NumberedPath(path, i)).Where(File.Exists).ToList() : [];
+
+    private static List<string> SaveImages(IReadOnlyList<string> pageFiles, string path, ExportFormat format, int jpegQuality,
+        bool replaceNumbered)
     {
-        // The Save dialog only asks before replacing the name the user typed, not the numbered files.
-        if (pageFiles.Count > 1 &&
-            Enumerable.Range(1, pageFiles.Count).Select(i => NumberedPath(path, i)).FirstOrDefault(File.Exists) is { } existing)
+        if (!replaceNumbered && ExistingNumberedFiles(path, pageFiles.Count) is [var existing, ..])
             throw new IOException($"{Path.GetFileName(existing)} already exists. Choose another name so it isn't replaced.");
 
         var written = new List<string>();

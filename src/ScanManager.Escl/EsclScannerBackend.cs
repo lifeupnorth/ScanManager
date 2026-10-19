@@ -15,8 +15,14 @@ public sealed class EsclScannerBackend : IScannerBackend, IDisposable
 {
     public const string Id = "escl";
 
-    /// <summary>How long discovery waits for a scanner to answer before leaving it to other backends.</summary>
-    private static readonly TimeSpan ProbeTimeout = TimeSpan.FromSeconds(5);
+    /// <summary>
+    /// How long a quick request (the discovery probe, a status check) waits for an answer. Discovery
+    /// leaves a silent scanner to other backends; a status check just goes without the status.
+    /// </summary>
+    private static readonly TimeSpan QuickRequestTimeout = TimeSpan.FromSeconds(5);
+
+    /// <summary>How long Cancel waits for a page that is already being downloaded before abandoning it.</summary>
+    private static readonly TimeSpan CancelGrace = TimeSpan.FromSeconds(30);
 
     private readonly IEsclDeviceSource _source;
     private readonly HttpClient _http;
@@ -44,13 +50,13 @@ public sealed class EsclScannerBackend : IScannerBackend, IDisposable
             try
             {
                 using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                timeout.CancelAfter(ProbeTimeout);
+                timeout.CancelAfter(QuickRequestTimeout);
                 _capabilities[device.Id] = await client.GetCapabilitiesAsync(timeout.Token);
                 _clients[device.Id] = client;
                 return new ScannerInfo(device.Id, device.Name, Id);
             }
             catch (Exception ex) when (ex is HttpRequestException or EsclHttpException or FormatException or System.Xml.XmlException
-                                           || ex is OperationCanceledException && !cancellationToken.IsCancellationRequested)
+                                           || IsTimeout(ex, cancellationToken))
             {
                 return null;
             }
@@ -114,6 +120,10 @@ public sealed class EsclScannerBackend : IScannerBackend, IDisposable
             throw await ExplainAsync(client, ex, feeder);
         }
 
+        // Cancel takes effect between pages: a page already being downloaded is finished and kept,
+        // since the scanner has fed that sheet anyway. A download still stuck after the grace is dropped.
+        using var download = new CancellationTokenSource();
+        using var onCancel = cancellationToken.Register(() => download.CancelAfter(CancelGrace));
         bool finished = false;
         try
         {
@@ -123,7 +133,7 @@ public sealed class EsclScannerBackend : IScannerBackend, IDisposable
                 byte[]? data;
                 try
                 {
-                    data = await client.NextDocumentAsync(job, cancellationToken);
+                    data = await client.NextDocumentAsync(job, download.Token);
                 }
                 catch (Exception ex) when (ex is EsclHttpException or HttpRequestException || IsTimeout(ex, cancellationToken))
                 {
@@ -150,7 +160,7 @@ public sealed class EsclScannerBackend : IScannerBackend, IDisposable
         }
         finally
         {
-            // Stop the scanner when we leave early (flatbed done, page limit, cancel, error).
+            // Stop the scanner when we leave early (flatbed done, cancel, error).
             if (!finished)
                 await client.CancelJobAsync(job);
         }
@@ -237,16 +247,28 @@ public sealed class EsclScannerBackend : IScannerBackend, IDisposable
 
     private static async Task EnsureFeederReadyAsync(EsclClient client, CancellationToken ct)
     {
-        EsclStatus status;
+        // Without a status the job itself reports any problem.
+        if (await TryGetStatusAsync(client, ct) is { } status && FeederProblem(status) is { } problem)
+            throw problem;
+    }
+
+    /// <summary>
+    /// The scanner's status, or null when it can't be had quickly. Status only refines messages, so a
+    /// scanner that doesn't answer must not hold up the scan or the error for the full page timeout.
+    /// </summary>
+    private static async Task<EsclStatus?> TryGetStatusAsync(EsclClient client, CancellationToken ct)
+    {
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeout.CancelAfter(QuickRequestTimeout);
         try
         {
-            status = await client.GetStatusAsync(ct);
+            return await client.GetStatusAsync(timeout.Token);
         }
-        catch (Exception ex) when (ex is HttpRequestException or EsclHttpException or FormatException or System.Xml.XmlException)
+        catch (Exception ex) when (ex is HttpRequestException or EsclHttpException or FormatException or System.Xml.XmlException
+                                   || IsTimeout(ex, ct))
         {
-            return; // Status is optional; the job itself will report problems.
+            return null;
         }
-        if (FeederProblem(status) is { } problem) throw problem;
     }
 
     private static ScannerException? FeederProblem(EsclStatus status) => status.AdfState switch
@@ -266,21 +288,19 @@ public sealed class EsclScannerBackend : IScannerBackend, IDisposable
         if (error is HttpRequestException or OperationCanceledException)
             return Unreachable(client, error);
 
-        try
+        if (await TryGetStatusAsync(client, CancellationToken.None) is { } status)
         {
-            var status = await client.GetStatusAsync();
             if (feeder && FeederProblem(status) is { } problem) return problem;
             if (status.State == "Processing")
                 return new ScannerException("The scanner is busy. Wait for it to finish and try again.", ScannerErrorKind.Busy, error);
         }
-        catch (Exception ex) when (ex is HttpRequestException or EsclHttpException or FormatException or System.Xml.XmlException) { }
 
         return error is EsclHttpException { Status: HttpStatusCode.Conflict or HttpStatusCode.ServiceUnavailable }
             ? new ScannerException("The scanner is busy or not ready. Try again in a moment.", ScannerErrorKind.Busy, error)
             : new ScannerException(error.Message, ScannerErrorKind.General, error);
     }
 
-    /// <summary>HttpClient reports its timeout as a cancellation; only the caller's token means the user cancelled.</summary>
+    /// <summary>HttpClient reports its timeout as a cancellation; only the caller's token means the user canceled.</summary>
     private static bool IsTimeout(Exception ex, CancellationToken ct) =>
         ex is OperationCanceledException && !ct.IsCancellationRequested;
 

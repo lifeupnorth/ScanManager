@@ -125,6 +125,19 @@ public class PixelOpsTests
     }
 
     [Fact]
+    public void A_speck_near_the_right_edge_is_still_blank()
+    {
+        // Letter at 300 dpi: the tiles leave a 14-pixel strip at the right, where a 4-pixel
+        // speck used to be over 1% of the samples.
+        const int w = 2550, h = 3300;
+        var page = Filled(w, h, 250);
+        for (int y = 1600; y < 1604; y++)
+            for (int x = 2440; x < 2444; x++)
+                page[y * w + x] = 40;
+        Assert.True(PixelOps.IsBlank(page, w, h, w));
+    }
+
+    [Fact]
     public void Light_show_through_does_not_count_as_content()
     {
         const int w = 200, h = 300;

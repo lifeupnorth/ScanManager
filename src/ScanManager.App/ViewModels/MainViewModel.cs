@@ -523,7 +523,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                 SelectedPage = page;
                 HasUnsavedChanges = true;
             }
-            if (feeder) StatusText = $"{Summary(added.Count, skipped)}. Scanning the next page…";
+            if (feeder && _scanCts is { IsCancellationRequested: false })
+                StatusText = $"{Summary(added.Count, skipped)}. Scanning the next page…";
         });
 
         if (added.Count > 0)
@@ -593,7 +594,11 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand(CanExecute = nameof(IsScanning))]
-    private void CancelScan() => _scanCts?.Cancel();
+    private void CancelScan()
+    {
+        _scanCts?.Cancel();
+        StatusText = "Finishing the current page…"; // backends deliver a page that is already on its way
+    }
 
     // ---- Page viewing and editing ---------------------------------------------------------
 
@@ -836,12 +841,21 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         if (target is null) return;
 
         var files = Pages.Select(p => p.FilePath).ToList();
+        var replaced = target.Format is ExportFormat.Png or ExportFormat.Jpeg
+            ? DocumentExporter.ExistingNumberedFiles(target.Path, files.Count)
+            : [];
+        if (replaced.Count > 0 && !_dialogs.Confirm(replaced.Count == 1
+                ? $"{Path.GetFileName(replaced[0])} already exists. Replace it?"
+                : $"{Path.GetFileName(replaced[0])} and {replaced.Count - 1} more numbered files already exist. Replace them?",
+                "Replace files"))
+            return;
+
         int quality = _settings.JpegQuality;
         IsBusy = true;
         StatusText = $"Saving {PageCountText.ToLowerInvariant()}…";
         try
         {
-            var written = await Task.Run(() => DocumentExporter.Save(files, target.Path, target.Format, quality));
+            var written = await Task.Run(() => DocumentExporter.Save(files, target.Path, target.Format, quality, replaceNumbered: true));
             _settings.LastSaveFolder = Path.GetDirectoryName(target.Path);
             _settings.LastSaveFormatIndex = (int)target.Format;
             HasUnsavedChanges = false;

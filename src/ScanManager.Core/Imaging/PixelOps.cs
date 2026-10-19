@@ -94,7 +94,9 @@ public static class PixelOps
 
         // About 1/24 of the shorter side: roughly 1/3 inch on a letter page.
         int tile = Math.Max(8, Math.Min(width, height) / 24);
-        int tilesX = (x1 - x0 + tile - 1) / tile, tilesY = (y1 - y0 + tile - 1) / tile;
+        // Whole tiles only: the leftover strip joins the last tile rather than forming a sliver
+        // a few pixels wide, where a single speck of dust would count as ink.
+        int tilesX = Math.Max(1, (x1 - x0) / tile), tilesY = Math.Max(1, (y1 - y0) / tile);
         var dark = new int[tilesX * tilesY];
         var samples = new int[tilesX * tilesY];
 
@@ -103,10 +105,10 @@ public static class PixelOps
         for (int y = y0; y < y1; y += step)
         {
             var row = gray.Slice(y * stride, width);
-            int rowBase = (y - y0) / tile * tilesX;
+            int rowBase = Math.Min((y - y0) / tile, tilesY - 1) * tilesX;
             for (int x = x0; x < x1; x += step)
             {
-                int t = rowBase + (x - x0) / tile;
+                int t = rowBase + Math.Min((x - x0) / tile, tilesX - 1);
                 samples[t]++;
                 if (row[x] < darkThreshold) dark[t]++;
             }

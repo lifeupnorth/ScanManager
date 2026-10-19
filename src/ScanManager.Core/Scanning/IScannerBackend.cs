@@ -10,8 +10,8 @@ public interface IScannerBackend
     Task<ScannerCapabilities> GetCapabilitiesAsync(string deviceId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Scans one image (flatbed) or every page in the feeder. Cancellation stops the job
-    /// as soon as the backend can; a page that is still being transferred is dropped.
+    /// Scans one image (flatbed) or every page in the feeder. Cancellation takes effect between
+    /// pages: a page that is already being transferred is finished and delivered first.
     /// </summary>
     IAsyncEnumerable<ScannedImage> ScanAsync(string deviceId, ScanSettings settings, CancellationToken cancellationToken = default);
 }

@@ -65,6 +65,32 @@ public sealed class PageSafetyTests : IDisposable
 
         var ex = Assert.Throws<IOException>(() => DocumentExporter.Save(pages, target, ExportFormat.Png, 85));
         Assert.Contains("receipts_001.png", ex.Message);
+
+        Assert.Equal(written, DocumentExporter.Save(pages, target, ExportFormat.Png, 85, replaceNumbered: true));
+    }
+
+    [Fact]
+    public async Task Saving_over_numbered_files_asks_first()
+    {
+        var dialogs = new RecordingDialogs();
+        using var vm = new MainViewModel(new ScannerRegistry([]), new PageStore(), dialogs,
+            new SettingsStore(Path.Combine(_dir, "settings.json")));
+        await vm.ImportFilesAsync([WritePage(0), WritePage(200)]);
+        string older = Path.Combine(_dir, "receipts_001.png");
+        File.WriteAllText(older, "older scan");
+        dialogs.NextSaveTarget = new SaveTarget(Path.Combine(_dir, "receipts.png"), ExportFormat.Png);
+
+        dialogs.ConfirmAnswer = false;
+        await vm.SaveCommand.ExecuteAsync(null);
+        Assert.Equal("older scan", File.ReadAllText(older));
+
+        dialogs.ConfirmAnswer = true;
+        await vm.SaveCommand.ExecuteAsync(null);
+        Assert.NotEqual("older scan", File.ReadAllText(older));
+
+        Assert.All(dialogs.Confirmations, message => Assert.Contains("receipts_001.png", message));
+        Assert.Equal(2, dialogs.Confirmations.Count);
+        Assert.Empty(dialogs.Errors);
     }
 
     [Fact]
@@ -152,11 +178,20 @@ public sealed class PageSafetyTests : IDisposable
     private sealed class RecordingDialogs : IDialogService
     {
         public List<string> Errors { get; } = [];
+        public List<string> Confirmations { get; } = [];
+        public SaveTarget? NextSaveTarget { get; set; }
+        public bool ConfirmAnswer { get; set; } = true;
 
         public Preferences? EditPreferences(Preferences current) => null;
-        public SaveTarget? AskSaveTarget(string defaultFileName, string? initialFolder, ExportFormat defaultFormat) => null;
+        public SaveTarget? AskSaveTarget(string defaultFileName, string? initialFolder, ExportFormat defaultFormat) => NextSaveTarget;
         public IReadOnlyList<string>? AskImportFiles(string? initialFolder) => null;
-        public bool Confirm(string message, string title) => true;
+
+        public bool Confirm(string message, string title)
+        {
+            Confirmations.Add(message);
+            return ConfirmAnswer;
+        }
+
         public void ShowError(string message, string title = "ScanManager") => Errors.Add(message);
         public bool Print(IReadOnlyList<string> pageFiles, string jobName) => false;
     }

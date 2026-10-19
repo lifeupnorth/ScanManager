@@ -174,18 +174,60 @@ public class EsclTests
     }
 
     [Fact]
-    public async Task A_scanner_that_stops_answering_is_reported_offline_not_cancelled()
+    public async Task A_scanner_that_stops_answering_is_reported_offline_not_canceled()
     {
         var scanner = new FakeScanner { Pages = 1, Stalls = true };
-        var source = new FixedSource(new EsclDevice("dev", "Test MFP", new Uri("http://scanner.test/eSCL")));
-        using var backend = new EsclScannerBackend(source, new HttpClient(scanner) { Timeout = TimeSpan.FromMilliseconds(200) });
-        Assert.Single(await backend.GetDevicesAsync());
+        using var backend = await ConnectAsync(scanner, TimeSpan.FromMilliseconds(200));
 
         var ex = await Assert.ThrowsAsync<ScannerException>(async () =>
         {
             await foreach (var _ in backend.ScanAsync("dev", new ScanSettings { Source = ScanSource.Feeder })) { }
         });
         Assert.Equal(ScannerErrorKind.Offline, ex.Kind);
+        Assert.True(scanner.JobDeleted);
+    }
+
+    [Fact]
+    public async Task A_feeder_scan_goes_ahead_when_the_status_never_arrives()
+    {
+        var scanner = new FakeScanner { Pages = 1, StatusStalls = true };
+        using var backend = await ConnectAsync(scanner, TimeSpan.FromMilliseconds(500));
+
+        var pages = new List<ScannedImage>();
+        await foreach (var page in backend.ScanAsync("dev", new ScanSettings { Source = ScanSource.Feeder }))
+            pages.Add(page);
+
+        Assert.Single(pages);
+    }
+
+    [Fact]
+    public async Task A_refused_job_is_reported_busy_even_when_the_status_never_arrives()
+    {
+        var scanner = new FakeScanner { Pages = 1, StatusStalls = true, RefusesJobs = true };
+        using var backend = await ConnectAsync(scanner, TimeSpan.FromMilliseconds(500));
+
+        var ex = await Assert.ThrowsAsync<ScannerException>(async () =>
+        {
+            await foreach (var _ in backend.ScanAsync("dev", new ScanSettings { Source = ScanSource.Flatbed })) { }
+        });
+        Assert.Equal(ScannerErrorKind.Busy, ex.Kind);
+    }
+
+    [Fact]
+    public async Task Canceling_during_a_download_keeps_that_page_and_stops_the_job()
+    {
+        var scanner = new FakeScanner { Pages = 3, PageDelay = TimeSpan.FromMilliseconds(500) };
+        using var backend = await ConnectAsync(scanner);
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(200)); // mid-way through page 1
+
+        var pages = new List<ScannedImage>();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+        {
+            await foreach (var page in backend.ScanAsync("dev", new ScanSettings { Source = ScanSource.Feeder }, cts.Token))
+                pages.Add(page);
+        });
+
+        Assert.Single(pages);
         Assert.True(scanner.JobDeleted);
     }
 
@@ -198,10 +240,12 @@ public class EsclTests
         Assert.Empty(await backend.GetDevicesAsync());
     }
 
-    private static async Task<EsclScannerBackend> ConnectAsync(FakeScanner scanner)
+    private static async Task<EsclScannerBackend> ConnectAsync(FakeScanner scanner, TimeSpan? requestTimeout = null)
     {
         var source = new FixedSource(new EsclDevice("dev", "Test MFP", new Uri("http://scanner.test/eSCL")));
-        var backend = new EsclScannerBackend(source, new HttpClient(scanner));
+        var http = new HttpClient(scanner);
+        if (requestTimeout is { } timeout) http.Timeout = timeout;
+        var backend = new EsclScannerBackend(source, http);
         Assert.Single(await backend.GetDevicesAsync());
         return backend;
     }
@@ -224,6 +268,10 @@ public class EsclTests
         public int Pages { get; init; }
         /// <summary>Never answers a page request, like a scanner that lost power mid-page.</summary>
         public bool Stalls { get; init; }
+        public bool StatusStalls { get; init; }
+        /// <summary>Answers job requests with 409 Conflict, as a scanner busy with another job does.</summary>
+        public bool RefusesJobs { get; init; }
+        public TimeSpan PageDelay { get; init; }
         public string AdfState { get; init; } = "ScannerAdfLoaded";
         public string? LastJobXml { get; private set; }
         public bool JobDeleted { get; private set; }
@@ -235,9 +283,13 @@ public class EsclTests
             if (request.Method == HttpMethod.Get && path == "/eSCL/ScannerCapabilities")
                 return Xml(CapabilitiesXml);
             if (request.Method == HttpMethod.Get && path == "/eSCL/ScannerStatus")
+            {
+                if (StatusStalls) await Task.Delay(Timeout.Infinite, ct);
                 return Xml(Status(AdfState));
+            }
             if (request.Method == HttpMethod.Post && path == "/eSCL/ScanJobs")
             {
+                if (RefusesJobs) return new HttpResponseMessage(HttpStatusCode.Conflict);
                 LastJobXml = await request.Content!.ReadAsStringAsync(ct);
                 var created = new HttpResponseMessage(HttpStatusCode.Created);
                 created.Headers.Location = new Uri("/eSCL/ScanJobs/42", UriKind.Relative);
@@ -246,6 +298,7 @@ public class EsclTests
             if (request.Method == HttpMethod.Get && path == "/eSCL/ScanJobs/42/NextDocument")
             {
                 if (Stalls) await Task.Delay(Timeout.Infinite, ct);
+                await Task.Delay(PageDelay, ct);
                 if (_delivered >= Pages) return new HttpResponseMessage(HttpStatusCode.NotFound);
                 _delivered++;
                 return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent([0xFF, 0xD8, (byte)_delivered]) };

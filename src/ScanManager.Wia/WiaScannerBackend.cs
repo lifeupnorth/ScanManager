@@ -62,7 +62,9 @@ public sealed class WiaScannerBackend : IScannerBackend, IDisposable
             }
         });
 
-        await foreach (var image in channel.Reader.ReadAllAsync(cancellationToken))
+        // No token here: the STA loop checks it between pages, so a page already being transferred
+        // still arrives before the cancellation does.
+        await foreach (var image in channel.Reader.ReadAllAsync())
             yield return image;
         await work;
     }

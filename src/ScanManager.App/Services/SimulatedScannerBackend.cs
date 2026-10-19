@@ -57,7 +57,7 @@ public sealed class SimulatedScannerBackend : IScannerBackend, IDisposable
         for (int i = 1; i <= images; i++)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            await Task.Delay(settings.IsPreview ? 300 : 700, cancellationToken);
+            await Task.Delay(settings.IsPreview ? 300 : 700); // like a real page, finished even when canceled
             int index = i;
             byte[] data = await _sta.InvokeAsync(() => Render(settings, dpi, index));
             yield return new ScannedImage(data, dpi, i, delivered, BrightnessApplied: false, ContrastApplied: false);
