@@ -70,6 +70,22 @@ public sealed class PageSafetyTests : IDisposable
     }
 
     [Fact]
+    public async Task A_damaged_image_is_named_and_the_good_ones_are_added()
+    {
+        var dialogs = new RecordingDialogs();
+        using var vm = new MainViewModel(new ScannerRegistry([]), new PageStore(), dialogs,
+            new SettingsStore(Path.Combine(_dir, "settings.json")));
+        string damaged = Path.Combine(_dir, "damaged.png");
+        File.WriteAllBytes(damaged, PngBytes(100)[..60]); // cut off mid-file, as an interrupted copy leaves it
+
+        await vm.ImportFilesAsync([WritePage(0), damaged]);
+
+        Assert.Single(vm.Pages);
+        Assert.Contains("damaged.png", Assert.Single(dialogs.Errors));
+        Assert.True(vm.UndoCommand.CanExecute(null));
+    }
+
+    [Fact]
     public async Task Saving_over_numbered_files_asks_first()
     {
         var dialogs = new RecordingDialogs();

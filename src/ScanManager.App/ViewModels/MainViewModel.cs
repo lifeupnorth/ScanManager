@@ -926,7 +926,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                         added.Add(page);
                     }
                 }
-                catch (Exception ex) when (ex is IOException or NotSupportedException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
+                // FormatException covers WPF's FileFormatException, thrown for damaged or cut-off image files.
+                catch (Exception ex) when (ex is IOException or NotSupportedException or UnauthorizedAccessException or ArgumentException
+                                               or InvalidOperationException or FormatException)
                 {
                     failed.Add(Path.GetFileName(file));
                 }

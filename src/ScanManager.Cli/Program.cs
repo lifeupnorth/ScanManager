@@ -43,7 +43,7 @@ try
 
         case "scan":
         {
-            var device = PickDevice(devices, args);
+            // Options first, so a typo is reported before anything is sent to a scanner.
             var settings = new ScanSettings
             {
                 Source = Option("--source")?.ToLowerInvariant() switch
@@ -62,6 +62,7 @@ try
                 Area = ParseArea(Option("--area")),
                 IsPreview = args.Contains("--preview"),
             };
+            var device = PickDevice(devices, args);
             string? output = Option("--out");
             string? first = null;
 
@@ -85,6 +86,11 @@ try
             Console.Error.WriteLine($"Unknown command '{command}'. Use list, caps or scan.");
             return 2;
     }
+}
+catch (FormatException ex)
+{
+    Console.Error.WriteLine(ex.Message);
+    return 2;
 }
 catch (ScannerException ex)
 {
@@ -111,8 +117,12 @@ static ScannerInfo PickDevice(IReadOnlyList<ScannerInfo> devices, string[] args)
 static ScanArea? ParseArea(string? text)
 {
     if (text is null) return null;
-    var parts = text.Split(',').Select(p => double.Parse(p, CultureInfo.InvariantCulture)).ToArray();
-    return parts.Length == 4 ? new ScanArea(parts[0], parts[1], parts[2], parts[3]) : null;
+    var parts = text.Split(',');
+    var values = new double[4];
+    if (parts.Length != 4 || Enumerable.Range(0, 4).Any(i =>
+            !double.TryParse(parts[i], NumberStyles.Float, CultureInfo.InvariantCulture, out values[i])))
+        throw new FormatException($"--area takes four numbers in inches, x,y,w,h (for example 0,0,8.5,11), not \"{text}\".");
+    return new ScanArea(values[0], values[1], values[2], values[3]);
 }
 
 // Without --out, name the file after what the scanner sent (eSCL: JPEG or PNG, WIA: usually BMP).
